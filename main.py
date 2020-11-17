@@ -1,12 +1,17 @@
-import telebot
+from telebot import TeleBot, types
 import config
+from tracklist_handler import load_tracklist
 
-bot = telebot.TeleBot(config.TOKEN)
+song_list = load_tracklist(config.TRACKLIST_NAME)[2]
+bot = TeleBot(config.TOKEN)
 
 
-@bot.message_handler(content_types=["text"])
-def repeat_all_messages(message):
-    bot.send_message(message.chat.id, message.text)
+@bot.message_handler(commands=["start"])
+def keyboard(message):
+    markup = types.ReplyKeyboardMarkup(row_width=10)
+    buttons = [types.KeyboardButton(f'{i}') for i in song_list]
+    markup.add(*buttons)
+    bot.send_message(message.chat.id, text='choose', reply_markup=markup)
 
 
 if __name__ == "__main__":
