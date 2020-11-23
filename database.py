@@ -65,14 +65,15 @@ class Database:
         song_1st_letters = row[1]
         return author_1st_letters, song_1st_letters
 
-    def select_authors(self, letter: str):
+    def select(self, letter: str, field: str):
         """Return list of authors, which names starts with letter
 
         :param letter: (str) 1st letter in author name
+        :param field: (str) field in database which you want to filter
         :return: (list) List of authors
         """
-        self.cursor.execute(f"""SELECT author FROM tracklist
-                                WHERE author LIKE '{letter.upper()}%';""")
+        self.cursor.execute(f"""SELECT DISTINCT {field} FROM tracklist
+                                WHERE {field} LIKE '{letter.upper()}%';""")
         return self.cursor.fetchall()
 
     def close(self):
