@@ -1,18 +1,11 @@
 from telebot import TeleBot, types
 import database
 import config
+from utils import generate_markup
 
 bot = TeleBot(config.TOKEN)
 AUTHOR_KEYBOARD, SONG_KEYBOARD = [], []
 btn1, btn2, btn_home = 'Выбрать автора', 'Выбрать песню', 'В Начало'
-
-
-def generate_markup(buttons):
-    buttons = [types.KeyboardButton(f'{i}') for i in buttons]
-    markup = types.ReplyKeyboardMarkup(resize_keyboard=True,
-                                       one_time_keyboard=False)
-    markup.add(*buttons)
-    return markup
 
 
 @bot.message_handler(commands=["start"])
@@ -24,7 +17,6 @@ def start_bot(message):
 
     bot.send_message(message.chat.id, text='Выберите',
                      reply_markup=generate_markup([btn1, btn2]))
-
 
 
 @bot.message_handler(content_types=['text'])

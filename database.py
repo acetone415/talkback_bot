@@ -2,7 +2,7 @@
 
 import sqlite3
 import re
-import config
+
 
 
 class Database:
@@ -76,7 +76,18 @@ class Database:
                                 WHERE {field} LIKE '{letter.upper()}%';""")
         return self.cursor.fetchall()
 
+    def select_pair(self, song: str):
+        """Return pair (author, song) from database, filtered by song
+
+        :param letter: (str) 1st letter in song name
+        :return: (list) List of authors
+        """
+        self.cursor.execute(f"""SELECT author, song FROM tracklist
+                                WHERE song = '{song}';""")
+        return self.cursor.fetchall()
+
     def close(self):
         """Close connection with database"""
         self.connection.close()
+
 
