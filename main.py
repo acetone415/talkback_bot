@@ -45,7 +45,7 @@ def level1_keyboard(message):
 
 def select_author(message):
     db = database.Database(config.DATABASE_NAME)
-    result = db.select(letter=message.text, field='author')
+    result = db.select_field_by_letter(letter=message.text, field='author')
     buttons = [f'{i[0]}' for i in result]
     markup = generate_markup(buttons)
     bot.send_message(
@@ -56,7 +56,7 @@ def select_author(message):
 
 def select_song(message):
     db = database.Database(config.DATABASE_NAME)
-    result = db.select(letter=message.text, field='song')
+    result = db.select_field_by_letter(letter=message.text, field='song')
     buttons = [f'{i[0]}' for i in result]
     markup = generate_markup(buttons)
     bot.send_message(
