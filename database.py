@@ -1,8 +1,7 @@
-"""This module works with database"""
+"""This module works with database (DB)"""
 
 import sqlite3
 import re
-
 
 
 class Database:
@@ -27,7 +26,7 @@ class Database:
         self.connection.commit()
 
     def load_tracklist_from_file(self, filename):
-        """Load new tracklist from file to database
+        """Load new tracklist from file to DB
 
         :param filename: (str) Tracklist filename
         """
@@ -65,8 +64,8 @@ class Database:
         song_1st_letters = row[1]
         return author_1st_letters, song_1st_letters
 
-    def select(self, letter: str, field: str):
-        """Return list of authors, which names starts with letter
+    def select_field_by_letter(self, letter: str, field: str):
+        """Return list of authors or songs, which names starts with letter
 
         :param letter: (str) 1st letter in author name
         :param field: (str) field in database which you want to filter
@@ -76,14 +75,15 @@ class Database:
                                 WHERE {field} LIKE '{letter.upper()}%';""")
         return self.cursor.fetchall()
 
-    def select_pair(self, song: str):
-        """Return pair (author, song) from database, filtered by song
+    def select_pair(self, field: str, item: str):
+        """Return pair (author, song) from database, filtered by desired field
 
-        :param letter: (str) 1st letter in song name
-        :return: (list) List of authors
+        :param field: (str) field in DB to be selected
+        :param item: (str) author or song in DB
+        :return: (list) List of tuples (author, song)
         """
         self.cursor.execute(f"""SELECT author, song FROM tracklist
-                                WHERE song = '{song}';""")
+                                   WHERE {field} = '{item}';""")
         return self.cursor.fetchall()
 
     def close(self):
