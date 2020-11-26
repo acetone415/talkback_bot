@@ -26,36 +26,23 @@ def level1_keyboard(message):
         bot.send_message(
             message.chat.id, text='С какой буквы начинается имя автора?',
             reply_markup=generate_markup(AUTHOR_KEYBOARD))
-        bot.register_next_step_handler(message, select_author)
+        bot.register_next_step_handler(message, level2_keyboard, field='author')
     elif message.text == 'Выбрать песню':
         bot.send_message(
             message.chat.id, text='С какой буквы начинается название песни?',
             reply_markup=generate_markup(SONG_KEYBOARD))
-        bot.register_next_step_handler(message, select_song)
+        bot.register_next_step_handler(message, level2_keyboard, field='song')
 
 
-def select_author(message):
+def level2_keyboard(message, field):
     db = database.Database(config.DATABASE_NAME)
-    result = db.select_field_by_letter(letter=message.text, field='author')
+    result = db.select_field_by_letter(letter=message.text, field=field)
     buttons = [f'{i[0]}' for i in result]
     markup = generate_markup(buttons)
     bot.send_message(
-        message.chat.id, text="Выберите автора",
+        message.chat.id, text=f"Выберите {field}",
         reply_markup=markup)
     db.close()
-    bot.register_next_step_handler(message, choose_song_and_author_by_author)
-
-
-def select_song(message):
-    db = database.Database(config.DATABASE_NAME)
-    result = db.select_field_by_letter(letter=message.text, field='song')
-    buttons = [f'{i[0]}' for i in result]
-    markup = generate_markup(buttons)
-    bot.send_message(
-        message.chat.id, text="Выберите песню",
-        reply_markup=markup)
-    db.close()
-    bot.register_next_step_handler(message, choose_song_and_author_by_song)
 
 
 def choose_song_and_author_by_author(message):
