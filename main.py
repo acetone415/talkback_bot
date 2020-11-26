@@ -50,7 +50,7 @@ def select_author(message):
         message.chat.id, text="Выберите автора",
         reply_markup=markup)
     db.close()
-    bot.register_next_step_handler(message, choose_song_and_author)
+    bot.register_next_step_handler(message, choose_song_and_author_by_author)
 
 
 def select_song(message):
@@ -62,14 +62,25 @@ def select_song(message):
         message.chat.id, text="Выберите песню",
         reply_markup=markup)
     db.close()
+    bot.register_next_step_handler(message, choose_song_and_author_by_song)
 
 
-def choose_song_and_author(message):
+def choose_song_and_author_by_author(message):
     db = database.Database(config.DATABASE_NAME)
     result = db.select_pair(item=message.text, field='author')
     buttons = [f'{" - ".join(i)}' for i in result]
     markup = generate_markup(buttons)
-    bot.send_message(message.chat.id, text='choose', reply_markup=markup)
+    bot.send_message(message.chat.id, text='Выбирайте', reply_markup=markup)
+    db.close()
+
+
+def choose_song_and_author_by_song(message):
+    db = database.Database(config.DATABASE_NAME)
+    result = db.select_pair(item=message.text, field='song')
+    buttons = [f'{" - ".join(i)}' for i in result]
+    markup = generate_markup(buttons)
+    bot.send_message(message.chat.id, text='Выбирайте', reply_markup=markup)
+    db.close()
 
 
 if __name__ == "__main__":
