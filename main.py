@@ -4,7 +4,6 @@ import config
 
 bot = TeleBot(config.TOKEN)
 AUTHOR_KEYBOARD, SONG_KEYBOARD = [], []
-btn1, btn2, btn_home = 'Выбрать автора', 'Выбрать песню', 'В Начало'
 
 
 def generate_markup(buttons):
@@ -22,20 +21,21 @@ def start_bot(message):
     AUTHOR_KEYBOARD, SONG_KEYBOARD = db.get_keyboards()
     db.close()
 
-    bot.send_message(message.chat.id, text='Выберите',
-                     reply_markup=generate_markup([btn1, btn2]))
-
+    bot.send_message(
+        message.chat.id, text='Что вы хотите выбрать?',
+        reply_markup=generate_markup(['Выбрать автора',
+                                      'Выбрать песню']))
 
 
 @bot.message_handler(content_types=['text'])
 def level1_keyboard(message):
-    if message.text == btn1:
+    if message.text == 'Выберите автора':
         text, keyboard, func = 'Выберите автора', AUTHOR_KEYBOARD, select_author
         bot.send_message(
             message.chat.id, text=text,
             reply_markup=generate_markup(keyboard))
         bot.register_next_step_handler(message, func)
-    elif message.text == btn2:
+    elif message.text == 'Выберите песню':
         text, keyboard, func = 'Выберите песню', SONG_KEYBOARD, select_song
         bot.send_message(
             message.chat.id, text=text,
@@ -52,6 +52,7 @@ def select_author(message):
         message.chat.id, text="Выберите песню",
         reply_markup=markup)
     db.close()
+    bot.register_next_step_handler(message, choose_song_and_author)
 
 
 def select_song(message):
@@ -64,6 +65,8 @@ def select_song(message):
         reply_markup=markup)
     db.close()
 
+def choose_song_and_author(message):
+    pass
 
 if __name__ == "__main__":
     bot.infinity_polling()
