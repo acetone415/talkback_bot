@@ -2,7 +2,7 @@
 
 import sqlite3
 import re
-import config
+
 
 
 class Database:
