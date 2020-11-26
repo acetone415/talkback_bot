@@ -1,4 +1,4 @@
-"""This module works with database"""
+"""This module works with database (DB)"""
 
 import sqlite3
 import re
@@ -27,7 +27,7 @@ class Database:
         self.connection.commit()
 
     def load_tracklist_from_file(self, filename):
-        """Load new tracklist from file to database
+        """Load new tracklist from file to DB
 
         :param filename: (str) Tracklist filename
         """
@@ -74,6 +74,17 @@ class Database:
         """
         self.cursor.execute(f"""SELECT DISTINCT {field} FROM tracklist
                                 WHERE {field} LIKE '{letter.upper()}%';""")
+        return self.cursor.fetchall()
+
+    def select_pair(self, field: str, item: str):
+        """Return pair (author, song) from database, filtered by desired field
+
+        :param field: (str) field in DB to be selected
+        :param item: (str) author or song in DB
+        :return: (list) List of tuples (author, song)
+        """
+        self.cursor.execute(f"""SELECT author, song FROM tracklist
+                                   WHERE {field} = '{item}';""")
         return self.cursor.fetchall()
 
     def close(self):
