@@ -9,7 +9,7 @@ AUTHOR_KEYBOARD, SONG_KEYBOARD = [], []
 def generate_markup(buttons):
     buttons = [types.KeyboardButton(f'{i}') for i in buttons]
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True,
-                                       one_time_keyboard=False)
+                                       one_time_keyboard=True)
     markup.add(*buttons)
     return markup
 
