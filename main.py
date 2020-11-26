@@ -65,8 +65,13 @@ def select_song(message):
         reply_markup=markup)
     db.close()
 
+
 def choose_song_and_author(message):
-    pass
+    db = database.Database(config.DATABASE_NAME)
+    result = db.select_field_by_letter(letter=message.text, field='song')
+    buttons = [f'{i[0]}' for i in result]
+    markup = generate_markup(buttons)
+
 
 if __name__ == "__main__":
     bot.infinity_polling()
