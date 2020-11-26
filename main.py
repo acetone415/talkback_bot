@@ -29,18 +29,16 @@ def start_bot(message):
 
 @bot.message_handler(content_types=['text'])
 def level1_keyboard(message):
-    if message.text == 'Выберите автора':
-        text, keyboard, func = 'Выберите автора', AUTHOR_KEYBOARD, select_author
+    if message.text == 'Выбрать автора':
         bot.send_message(
-            message.chat.id, text=text,
-            reply_markup=generate_markup(keyboard))
-        bot.register_next_step_handler(message, func)
-    elif message.text == 'Выберите песню':
-        text, keyboard, func = 'Выберите песню', SONG_KEYBOARD, select_song
+            message.chat.id, text='С какой буквы начинается имя автора?',
+            reply_markup=generate_markup(AUTHOR_KEYBOARD))
+        bot.register_next_step_handler(message, select_author)
+    elif message.text == 'Выбрать песню':
         bot.send_message(
-            message.chat.id, text=text,
-            reply_markup=generate_markup(keyboard))
-        bot.register_next_step_handler(message, func)
+            message.chat.id, text='С какой буквы начинается название песни?',
+            reply_markup=generate_markup(SONG_KEYBOARD))
+        bot.register_next_step_handler(message, select_song)
 
 
 def select_author(message):
@@ -49,7 +47,7 @@ def select_author(message):
     buttons = [f'{i[0]}' for i in result]
     markup = generate_markup(buttons)
     bot.send_message(
-        message.chat.id, text="Выберите песню",
+        message.chat.id, text="Выберите автора",
         reply_markup=markup)
     db.close()
     bot.register_next_step_handler(message, choose_song_and_author)
@@ -68,9 +66,10 @@ def select_song(message):
 
 def choose_song_and_author(message):
     db = database.Database(config.DATABASE_NAME)
-    result = db.select_field_by_letter(letter=message.text, field='song')
-    buttons = [f'{i[0]}' for i in result]
+    result = db.select_pair(item=message.text, field='author')
+    buttons = [f'{" - ".join(i)}' for i in result]
     markup = generate_markup(buttons)
+    bot.send_message(message.chat.id, text='choose', reply_markup=markup)
 
 
 if __name__ == "__main__":
