@@ -17,7 +17,7 @@ def start_bot(message):
     bot.send_message(
         message.chat.id, text='Что вы хотите выбрать?',
         reply_markup=generate_markup(['Выбрать автора',
-                                      'Выбрать песню']))
+                                      'Выбрать песню'],))
 
 
 @bot.message_handler(content_types=['text'])
@@ -36,27 +36,22 @@ def level1_keyboard(message):
 
 def level2_keyboard(message, field):
     db = database.Database(config.DATABASE_NAME)
+    # the dictionary is needed to substitute the field name into the "text"
+    # parameter in bot.send_message
+    field_to_text = {'song': 'песню', 'author': 'автора'}
     result = db.select_field_by_letter(letter=message.text, field=field)
     buttons = [f'{i[0]}' for i in result]
     markup = generate_markup(buttons)
     bot.send_message(
-        message.chat.id, text=f"Выберите {field}",
+        message.chat.id, text=f"Выберите {field_to_text[field]}",
         reply_markup=markup)
     db.close()
+    bot.register_next_step_handler(message, level3_keyboard, field=field)
 
 
-def choose_song_and_author_by_author(message):
+def level3_keyboard(message, field):
     db = database.Database(config.DATABASE_NAME)
-    result = db.select_pair(item=message.text, field='author')
-    buttons = [f'{" - ".join(i)}' for i in result]
-    markup = generate_markup(buttons)
-    bot.send_message(message.chat.id, text='Выбирайте', reply_markup=markup)
-    db.close()
-
-
-def choose_song_and_author_by_song(message):
-    db = database.Database(config.DATABASE_NAME)
-    result = db.select_pair(item=message.text, field='song')
+    result = db.select_pair(item=message.text, field=field)
     buttons = [f'{" - ".join(i)}' for i in result]
     markup = generate_markup(buttons)
     bot.send_message(message.chat.id, text='Выбирайте', reply_markup=markup)
