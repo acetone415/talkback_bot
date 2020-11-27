@@ -1,7 +1,10 @@
+"""Main Bot module."""
+
 from telebot import TeleBot
 import database
 import config
 import utils
+
 
 bot = TeleBot(config.TOKEN)
 AUTHOR_KEYBOARD, SONG_KEYBOARD = [], []
@@ -9,10 +12,19 @@ AUTHOR_KEYBOARD, SONG_KEYBOARD = [], []
 
 @bot.message_handler(commands=["start"])
 def start_bot(message):
+    """Initialise working with bot."""
     db = database.Database(config.DATABASE_NAME)
     global AUTHOR_KEYBOARD, SONG_KEYBOARD
     AUTHOR_KEYBOARD, SONG_KEYBOARD = db.get_keyboards()
+    bot.register_next_step_handler(message, get_started)
     db.close()
+
+
+# FIXME #1 you need to send the command /start twice so that the keyboard
+#  appears instead of sending it once
+def get_started(message):
+    bot.send_message(message.chat.id, text="Нажмите кнопку для начала работы",
+                     reply_markup=utils.generate_markup(["Начать работу"]))
 
 
 @bot.message_handler(commands=["help"])
@@ -31,7 +43,8 @@ def level1_keyboard(message):
         bot.send_message(
             message.chat.id, text='С какой буквы начинается имя автора?',
             reply_markup=utils.generate_markup(AUTHOR_KEYBOARD))
-        bot.register_next_step_handler(message, level2_keyboard, field='author')
+        bot.register_next_step_handler(message, level2_keyboard,
+                                       field='author')
     elif message.text == 'Выбрать песню':
         bot.send_message(
             message.chat.id, text='С какой буквы начинается название песни?',
@@ -54,12 +67,14 @@ def level2_keyboard(message, field):
     bot.register_next_step_handler(message, level3_keyboard, field=field)
 
 
+# TODO #1 Implement sending messages from bot to channel
 def level3_keyboard(message, field):
     db = database.Database(config.DATABASE_NAME)
     result = db.select_pair(item=message.text, field=field)
     buttons = [f'{" - ".join(i)}' for i in result]
     markup = utils.generate_markup(buttons)
     bot.send_message(message.chat.id, text='Выбирайте', reply_markup=markup)
+    bot.register_next_step_handler(message, get_started)
     db.close()
 
 
