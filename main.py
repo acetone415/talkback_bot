@@ -1,17 +1,10 @@
-from telebot import TeleBot, types
+from telebot import TeleBot
 import database
 import config
+import utils
 
 bot = TeleBot(config.TOKEN)
 AUTHOR_KEYBOARD, SONG_KEYBOARD = [], []
-
-
-def generate_markup(buttons):
-    buttons = [types.KeyboardButton(f'{i}') for i in buttons]
-    markup = types.ReplyKeyboardMarkup(resize_keyboard=True,
-                                       one_time_keyboard=True)
-    markup.add(*buttons)
-    return markup
 
 
 @bot.message_handler(commands=["start"])
@@ -21,68 +14,54 @@ def start_bot(message):
     AUTHOR_KEYBOARD, SONG_KEYBOARD = db.get_keyboards()
     db.close()
 
-    bot.send_message(
-        message.chat.id, text='Что вы хотите выбрать?',
-        reply_markup=generate_markup(['Выбрать автора',
-                                      'Выбрать песню']))
+
+@bot.message_handler(commands=["help"])
+def print_help_info(message):
+    bot.send_message(message.chat.id, text=utils.HELP_INFO)
 
 
 @bot.message_handler(content_types=['text'])
 def level1_keyboard(message):
-    if message.text == 'Выбрать автора':
+    if message.text not in ['Выбрать автора', 'Выбрать песню']:
+        bot.send_message(
+            message.chat.id, text='Что вы хотите выбрать?',
+            reply_markup=utils.generate_markup(['Выбрать автора',
+                                                'Выбрать песню']))
+    elif message.text == 'Выбрать автора':
         bot.send_message(
             message.chat.id, text='С какой буквы начинается имя автора?',
-            reply_markup=generate_markup(AUTHOR_KEYBOARD))
-        bot.register_next_step_handler(message, select_author)
+            reply_markup=utils.generate_markup(AUTHOR_KEYBOARD))
+        bot.register_next_step_handler(message, level2_keyboard, field='author')
     elif message.text == 'Выбрать песню':
         bot.send_message(
             message.chat.id, text='С какой буквы начинается название песни?',
-            reply_markup=generate_markup(SONG_KEYBOARD))
-        bot.register_next_step_handler(message, select_song)
+            reply_markup=utils.generate_markup(SONG_KEYBOARD))
+        bot.register_next_step_handler(message, level2_keyboard, field='song')
 
 
-def select_author(message):
+def level2_keyboard(message, field):
     db = database.Database(config.DATABASE_NAME)
-    result = db.select_field_by_letter(letter=message.text, field='author')
+    # the dictionary is needed to substitute the field name into the "text"
+    # parameter in bot.send_message
+    field_to_text = {'song': 'песню', 'author': 'автора'}
+    result = db.select_field_by_letter(letter=message.text, field=field)
     buttons = [f'{i[0]}' for i in result]
-    markup = generate_markup(buttons)
+    markup = utils.generate_markup(buttons)
     bot.send_message(
-        message.chat.id, text="Выберите автора",
+        message.chat.id, text=f"Выберите {field_to_text[field]}",
         reply_markup=markup)
     db.close()
-    bot.register_next_step_handler(message, choose_song_and_author_by_author)
+    bot.register_next_step_handler(message, level3_keyboard, field=field)
 
 
-def select_song(message):
+def level3_keyboard(message, field):
     db = database.Database(config.DATABASE_NAME)
-    result = db.select_field_by_letter(letter=message.text, field='song')
-    buttons = [f'{i[0]}' for i in result]
-    markup = generate_markup(buttons)
-    bot.send_message(
-        message.chat.id, text="Выберите песню",
-        reply_markup=markup)
-    db.close()
-    bot.register_next_step_handler(message, choose_song_and_author_by_song)
-
-
-def choose_song_and_author_by_author(message):
-    db = database.Database(config.DATABASE_NAME)
-    result = db.select_pair(item=message.text, field='author')
+    result = db.select_pair(item=message.text, field=field)
     buttons = [f'{" - ".join(i)}' for i in result]
-    markup = generate_markup(buttons)
-    bot.send_message(message.chat.id, text='Выбирайте', reply_markup=markup)
-    db.close()
-
-
-def choose_song_and_author_by_song(message):
-    db = database.Database(config.DATABASE_NAME)
-    result = db.select_pair(item=message.text, field='song')
-    buttons = [f'{" - ".join(i)}' for i in result]
-    markup = generate_markup(buttons)
+    markup = utils.generate_markup(buttons)
     bot.send_message(message.chat.id, text='Выбирайте', reply_markup=markup)
     db.close()
 
 
 if __name__ == "__main__":
     bot.infinity_polling()
-

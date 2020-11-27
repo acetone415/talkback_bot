@@ -4,7 +4,6 @@ import sqlite3
 import re
 
 
-
 class Database:
 
     def __init__(self, database):
@@ -90,4 +89,5 @@ class Database:
     def close(self):
         """Close connection with database"""
         self.connection.close()
+
 
