@@ -20,8 +20,6 @@ def start_bot(message):
     db.close()
 
 
-# FIXME #1 you need to send the command /start twice so that the keyboard
-#  appears instead of sending it once
 def get_started(message):
     bot.send_message(message.chat.id, text="Нажмите кнопку для начала работы",
                      reply_markup=utils.generate_markup(["Начать работу"]))
@@ -83,7 +81,11 @@ def send_to_channel(message):
     """Sending choosed song to group channel."""
 
     bot.send_message(chat_id='@testchannel2111',
-                     text=f"{message.text} is next")
+                     text=f"{message.text} is next",)
+    bot.send_message(chat_id=message.chat.id,
+                     text="Для продолжения нажмите на кнопку",
+                     reply_markup=utils.generate_markup(['Начать работу']))
+
 
 
 if __name__ == "__main__":
