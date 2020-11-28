@@ -1,16 +1,19 @@
-"""This module works with database (DB)"""
+"""This module works with database(DB)."""
 
 import sqlite3
 import re
 
 
 class Database:
+    """Database class."""
 
     def __init__(self, database):
+        """Initialise connection with DB."""
         self.connection = sqlite3.connect(database)
         self.cursor = self.connection.cursor()
 
     def create_table(self):
+        """Create table."""
         self.cursor.execute("""CREATE TABLE IF NOT EXISTS tracklist (
                                 "id" INTEGER PRIMARY KEY AUTOINCREMENT,
                                 "author" TEXT,
@@ -21,12 +24,13 @@ class Database:
         self.connection.commit()
 
     def drop_table(self):
+        """Drop table."""
         self.cursor.execute("""DROP TABLE IF EXISTS tracklist;""")
         self.cursor.execute("""DROP TABLE IF EXISTS keyboards;""")
         self.connection.commit()
 
     def load_tracklist_from_file(self, filename):
-        """Load new tracklist from file to DB
+        """Load new tracklist from file to DB.
 
         :param filename: (str) Tracklist filename
         """
@@ -53,7 +57,7 @@ class Database:
         self.connection.commit()
 
     def get_keyboards(self) -> tuple:
-        """Returns first letters of authors and songnames
+        """Return first letters of authors and songnames.
 
         :return: (tuple) ((str) author_1st_letters,
                           (str) song_1st_letters)
@@ -65,18 +69,19 @@ class Database:
         return author_1st_letters, song_1st_letters
 
     def select_field_by_letter(self, letter: str, field: str):
-        """Return list of authors or songs, which names starts with letter
+        """Return list of authors or songs, which names starts with letter.
 
-        :param letter: (str) 1st letter in author name
-        :param field: (str) field in database which you want to filter
-        :return: (list) List of authors
+        :param letter: (str) 1st letter in author or song name
+        :param field: (str) field in database which you want to filter (author
+        or song)
+        :return: (list) List of authors or songs
         """
         self.cursor.execute(f"""SELECT DISTINCT {field} FROM tracklist
                                 WHERE {field} LIKE '{letter.upper()}%';""")
         return self.cursor.fetchall()
 
     def select_pair(self, field: str, item: str):
-        """Return pair (author, song) from database, filtered by desired field
+        """Return pair (author, song) from database, filtered by desired field.
 
         :param field: (str) field in DB to be selected
         :param item: (str) author or song in DB
@@ -87,7 +92,5 @@ class Database:
         return self.cursor.fetchall()
 
     def close(self):
-        """Close connection with database"""
+        """Close connection with database."""
         self.connection.close()
-
-

@@ -12,26 +12,28 @@ AUTHOR_KEYBOARD, SONG_KEYBOARD = [], []
 
 @bot.message_handler(commands=["start"])
 def start_bot(message):
-    """Initialise working with bot."""
+    """Initialise bot setup after launching the bot."""
     db = database.Database(config.DATABASE_NAME)
     global AUTHOR_KEYBOARD, SONG_KEYBOARD
     AUTHOR_KEYBOARD, SONG_KEYBOARD = db.get_keyboards()
-    bot.register_next_step_handler(message, get_started)
     db.close()
 
 
 def get_started(message):
+    """Generate a start button."""
     bot.send_message(message.chat.id, text="Нажмите кнопку для начала работы",
                      reply_markup=utils.generate_markup(["Начать работу"]))
 
 
 @bot.message_handler(commands=["help"])
 def print_help_info(message):
+    """Print help information."""
     bot.send_message(message.chat.id, text=utils.HELP_INFO)
 
 
 @bot.message_handler(content_types=['text'])
 def level1_keyboard(message):
+    """First keyboard level."""
     if message.text not in ['Выбрать автора', 'Выбрать песню']:
         bot.send_message(
             message.chat.id, text='Что вы хотите выбрать?',
@@ -51,41 +53,47 @@ def level1_keyboard(message):
 
 
 def level2_keyboard(message, field):
-    db = database.Database(config.DATABASE_NAME)
+    """Second keyboard level, where you chose first letter of author or song.
 
-    # the dictionary is needed to substitute the field name into the "text"
-    # parameter in bot.send_message
+    :param field: (str) Field in DB by which song is selected
+    """
+    # the dictionary is needed to substitute the field name into the
+    # "text" parameter in bot.send_message
     field_to_text = {'song': 'песню', 'author': 'автора'}
 
+    db = database.Database(config.DATABASE_NAME)
     result = db.select_field_by_letter(letter=message.text, field=field)
+    db.close()
+
     buttons = [f'{i[0]}' for i in result]
     markup = utils.generate_markup(buttons)
+
     bot.send_message(
         message.chat.id, text=f"Выберите {field_to_text[field]}",
         reply_markup=markup)
-    db.close()
     bot.register_next_step_handler(message, level3_keyboard, field=field)
 
 
 def level3_keyboard(message, field):
+    """Last keyboard level, where you choose song to send in group channel."""
     db = database.Database(config.DATABASE_NAME)
     result = db.select_pair(item=message.text, field=field)
+    db.close()
+
     buttons = [f'{" - ".join(i)}' for i in result]
     markup = utils.generate_markup(buttons)
+
     bot.send_message(message.chat.id, text='Выбирайте', reply_markup=markup)
     bot.register_next_step_handler(message, send_to_channel)
-    db.close()
 
 
 def send_to_channel(message):
-    """Sending choosed song to group channel."""
-
-    bot.send_message(chat_id='@testchannel2111',
+    """Send chosen song to group channel."""
+    bot.send_message(chat_id=config.GROUP_CHANNEL_ID,
                      text=f"{message.text} is next",)
     bot.send_message(chat_id=message.chat.id,
                      text="Для продолжения нажмите на кнопку",
                      reply_markup=utils.generate_markup(['Начать работу']))
-
 
 
 if __name__ == "__main__":
