@@ -96,5 +96,19 @@ def send_to_channel(message):
                      reply_markup=utils.generate_markup(['Начать работу']))
 
 
+@bot.message_handler(commands=['new_tracklist'])
+def load_new_tracklist(message):
+    bot.send_message(message.chat.id, text="Download file")
+    bot.register_next_step_handler(message, download_file)
+
+
+@bot.message_handler(content_types=['document'])
+def download_file(message):
+    file_info = bot.get_file(message.document.file_id)
+    downloaded_file = bot.download_file(file_info.file_path)
+    with open("new file.txt", 'wb') as new_file:
+        new_file.write(downloaded_file)
+
+
 if __name__ == "__main__":
     bot.infinity_polling()
