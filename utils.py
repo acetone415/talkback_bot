@@ -6,14 +6,22 @@ HELP_INFO = """Для начала работы бота после его за�
 Для того, чтобы перейти к выбору песни введите любой символ"""
 
 
-def generate_markup(buttons):
+def generate_markup(buttons, btn_back=False, btn_home=False):
     """Generate ReplyKeyboardMarkup.
 
     :param buttons: (list) List, containing button labels
+    :param btn_back: (bool) Adds button "Back" to keyboard if True
+    :param btn_home: (bool) Adds button "Home" to keyboard if True
     :return markup: Keyboard markup object
     """
     buttons = [types.KeyboardButton(f'{i}') for i in buttons]
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True,
-                                       one_time_keyboard=True)
+                                       one_time_keyboard=True, row_width=5)
     markup.add(*buttons)
+    navigation = []
+    if btn_back:
+        navigation.append(types.KeyboardButton('Назад'))
+    if btn_home:
+        navigation.append(types.KeyboardButton('В начало'))
+    markup.row(*navigation)
     return markup
