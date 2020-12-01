@@ -66,7 +66,7 @@ def level2_keyboard(message, field):
     db.close()
 
     buttons = [f'{i[0]}' for i in result]
-    markup = utils.generate_markup(buttons)
+    markup = utils.generate_markup(buttons, row_width=2)
 
     bot.send_message(
         message.chat.id, text=f"Выберите {field_to_text[field]}",
@@ -81,7 +81,7 @@ def level3_keyboard(message, field):
     db.close()
 
     buttons = [f'{" - ".join(i)}' for i in result]
-    markup = utils.generate_markup(buttons)
+    markup = utils.generate_markup(buttons, row_width=1)
 
     bot.send_message(message.chat.id, text='Выбирайте', reply_markup=markup)
     bot.register_next_step_handler(message, send_to_channel)
@@ -96,18 +96,19 @@ def send_to_channel(message):
                      reply_markup=utils.generate_markup(['Начать работу']))
 
 
-@bot.message_handler(commands=['new_tracklist'])
-def load_new_tracklist(message):
-    bot.send_message(message.chat.id, text="Download file")
-    bot.register_next_step_handler(message, download_file)
-
-
 @bot.message_handler(content_types=['document'])
 def download_file(message):
     file_info = bot.get_file(message.document.file_id)
     downloaded_file = bot.download_file(file_info.file_path)
-    with open("new file.txt", 'wb') as new_file:
+    with open(config.TRACKLIST_NAME, 'wb') as new_file:
         new_file.write(downloaded_file)
+
+    db = database.Database(config.DATABASE_NAME)
+    db.load_tracklist_from_file(config.TRACKLIST_NAME)
+    db.close()
+
+    bot.register_next_step_handler(message, start_bot)
+
 
 
 if __name__ == "__main__":

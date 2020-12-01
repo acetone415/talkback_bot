@@ -12,8 +12,9 @@ class Database:
         self.connection = sqlite3.connect(database)
         self.cursor = self.connection.cursor()
 
-    def create_table(self):
-        """Create table."""
+    def create_tables(self):
+        """Create tables tracklist and keyboards from DB.
+        Table tracklist contains """
         self.cursor.execute("""CREATE TABLE IF NOT EXISTS tracklist (
                                 "id" INTEGER PRIMARY KEY AUTOINCREMENT,
                                 "author" TEXT,
@@ -23,8 +24,8 @@ class Database:
                                         "author_first_letters" TEXT);""")
         self.connection.commit()
 
-    def drop_table(self):
-        """Drop table."""
+    def drop_tables(self):
+        """Drop tables tracklist and keyboards from DB."""
         self.cursor.execute("""DROP TABLE IF EXISTS tracklist;""")
         self.cursor.execute("""DROP TABLE IF EXISTS keyboards;""")
         self.connection.commit()
@@ -47,8 +48,8 @@ class Database:
         # save first letters of authors and songs
         author_1st_letters = ''.join(sorted(list(set(author_1st_letters))))
         song_1st_letters = ''.join(sorted(list(set(song_1st_letters))))
-        self.drop_table()
-        self.create_table()
+        self.drop_tables()
+        self.create_tables()
         self.cursor.executemany("""INSERT INTO tracklist(author, song)
                                     VALUES (?, ?);""", tracklist)
         self.cursor.execute("INSERT INTO keyboards VALUES (?, ?);",
