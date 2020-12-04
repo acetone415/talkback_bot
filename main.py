@@ -98,6 +98,7 @@ def send_to_channel(message):
 
 @bot.message_handler(content_types=['document'])
 def download_file(message):
+    """Download the tracklist from user."""
     file_info = bot.get_file(message.document.file_id)
     downloaded_file = bot.download_file(file_info.file_path)
     with open(config.TRACKLIST_NAME, 'wb') as new_file:
@@ -108,7 +109,6 @@ def download_file(message):
     db.close()
 
     bot.register_next_step_handler(message, start_bot)
-
 
 
 if __name__ == "__main__":
