@@ -19,12 +19,6 @@ def start_bot(message):
     db.close()
 
 
-def get_started(message):
-    """Generate a start button."""
-    bot.send_message(message.chat.id, text="Нажмите кнопку для начала работы",
-                     reply_markup=utils.generate_markup(["Начать работу"]))
-
-
 @bot.message_handler(commands=["help"])
 def print_help_info(message):
     """Print help information."""
@@ -52,6 +46,11 @@ def level1_keyboard(message):
         bot.register_next_step_handler(message, level2_keyboard, field='song')
 
 
+def input_validation(message):
+    """Check """
+    pass
+
+
 def level2_keyboard(message, field):
     """Second keyboard level, where you chose first letter of author or song.
 
@@ -60,18 +59,24 @@ def level2_keyboard(message, field):
     # the dictionary is needed to substitute the field name into the
     # "text" parameter in bot.send_message
     field_to_text = {'song': 'песню', 'author': 'автора'}
+    field_to_keyboard = {'song': SONG_KEYBOARD, "author": AUTHOR_KEYBOARD}
+    if message.text.upper() not in field_to_keyboard[field]:
+        bot.send_message(message.chat.id,
+                         "Некорректный символ, попробуйте снова",
+                         reply_markup=utils.generate_markup(["Начать сначала"]))
+    else:
+        db = database.Database(config.DATABASE_NAME)
+        result = db.select_field_by_letter(letter=message.text.upper(),
+                                           field=field)
+        db.close()
 
-    db = database.Database(config.DATABASE_NAME)
-    result = db.select_field_by_letter(letter=message.text, field=field)
-    db.close()
+        buttons = [f'{i[0]}' for i in result]
+        markup = utils.generate_markup(buttons, row_width=2)
 
-    buttons = [f'{i[0]}' for i in result]
-    markup = utils.generate_markup(buttons, row_width=2)
-
-    bot.send_message(
-        message.chat.id, text=f"Выберите {field_to_text[field]}",
-        reply_markup=markup)
-    bot.register_next_step_handler(message, level3_keyboard, field=field)
+        bot.send_message(
+            message.chat.id, text=f"Выберите {field_to_text[field]}",
+            reply_markup=markup)
+        bot.register_next_step_handler(message, level3_keyboard, field=field)
 
 
 def level3_keyboard(message, field):
