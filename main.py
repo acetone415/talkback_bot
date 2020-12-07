@@ -46,11 +46,6 @@ def level1_keyboard(message):
         bot.register_next_step_handler(message, level2_keyboard, field='song')
 
 
-def input_validation(message):
-    """Check """
-    pass
-
-
 def level2_keyboard(message, field):
     """Second keyboard level, where you chose first letter of author or song.
 
@@ -60,10 +55,13 @@ def level2_keyboard(message, field):
     # "text" parameter in bot.send_message
     field_to_text = {'song': 'песню', 'author': 'автора'}
     field_to_keyboard = {'song': SONG_KEYBOARD, "author": AUTHOR_KEYBOARD}
-    if message.text.upper() not in field_to_keyboard[field]:
+    if message.text not in field_to_keyboard[field]:
+        # If sent message not in reply markup
         bot.send_message(message.chat.id,
-                         "Некорректный символ, попробуйте снова",
-                         reply_markup=utils.generate_markup(["Начать сначала"]))
+                         "Некорректный ввод, попробуйте снова",
+                         reply_markup=utils.generate_markup(
+                             field_to_keyboard[field]))
+        bot.register_next_step_handler(message, level2_keyboard, field)
     else:
         db = database.Database(config.DATABASE_NAME)
         result = db.select_field_by_letter(letter=message.text.upper(),
@@ -76,29 +74,50 @@ def level2_keyboard(message, field):
         bot.send_message(
             message.chat.id, text=f"Выберите {field_to_text[field]}",
             reply_markup=markup)
-        bot.register_next_step_handler(message, level3_keyboard, field=field)
+        bot.register_next_step_handler(message, level3_keyboard, field=field,
+                                       previous_buttons=buttons)
 
 
-def level3_keyboard(message, field):
+def level3_keyboard(message, field, previous_buttons):
     """Last keyboard level, where you choose song to send in group channel."""
-    db = database.Database(config.DATABASE_NAME)
-    result = db.select_pair(item=message.text, field=field)
-    db.close()
 
-    buttons = [f'{" - ".join(i)}' for i in result]
-    markup = utils.generate_markup(buttons, row_width=1)
+    if message.text not in previous_buttons:
+        # If sent message not in reply markup
+        bot.send_message(message.chat.id,
+                         "Некорректный ввод, попробуйте снова",
+                         reply_markup=utils.generate_markup(previous_buttons))
+        bot.register_next_step_handler(message, level3_keyboard, field,
+                                       previous_buttons)
 
-    bot.send_message(message.chat.id, text='Выбирайте', reply_markup=markup)
-    bot.register_next_step_handler(message, send_to_channel)
+    else:
+        db = database.Database(config.DATABASE_NAME)
+        result = db.select_pair(item=message.text, field=field)
+        db.close()
+
+        buttons = [f'{" - ".join(i)}' for i in result]
+        markup = utils.generate_markup(buttons, row_width=1)
+
+        bot.send_message(message.chat.id, text='Выбирайте', reply_markup=markup)
+        bot.register_next_step_handler(message, send_to_channel,
+                                       previous_buttons=buttons)
 
 
-def send_to_channel(message):
+def send_to_channel(message, previous_buttons):
     """Send chosen song to group channel."""
-    bot.send_message(chat_id=config.GROUP_CHANNEL_ID,
-                     text=f"{message.text} is next",)
-    bot.send_message(chat_id=message.chat.id,
-                     text="Для продолжения нажмите на кнопку",
-                     reply_markup=utils.generate_markup(['Начать работу']))
+
+    if message.text not in previous_buttons:
+        # If sent message not in reply markup
+        bot.send_message(message.chat.id,
+                         "Некорректный ввод, попробуйте снова",
+                         reply_markup=utils.generate_markup(previous_buttons))
+        bot.register_next_step_handler(message, send_to_channel,
+                                       previous_buttons)
+    else:
+        bot.send_message(chat_id=config.GROUP_CHANNEL_ID,
+                         text=f"{message.text} is next",)
+        bot.send_message(chat_id=message.chat.id,
+                         text="Для продолжения нажмите на кнопку",
+                         reply_markup=utils.generate_markup(['Начать работу']))
 
 
 @bot.message_handler(content_types=['document'])
