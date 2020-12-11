@@ -9,7 +9,7 @@ HELP_INFO = """Для начала работы бота после его за�
 
 def generate_markup(buttons,
                     btn_back=False,
-                    btn_home=False,
+                    btn_home=True,
                     row_width=5) -> types.ReplyKeyboardMarkup:
     """Generate ReplyKeyboardMarkup.
 

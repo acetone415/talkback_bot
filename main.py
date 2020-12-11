@@ -25,6 +25,19 @@ def print_help_info(message):
     bot.send_message(message.chat.id, text=utils.HELP_INFO)
 
 
+def is_home_button(message) -> bool:
+    """Check if message.text == 'В начало'.
+    :param message: Message object
+    :return: bool"""
+    if message.text == 'В начало':
+        bot.send_message(message.chat.id, "Нажмите кнопку для продожения",
+                         reply_markup=utils.generate_markup(['Начать работу'],
+                                                            btn_home=False))
+        bot.register_next_step_handler(message, level1_keyboard)
+        return True
+    return False
+
+
 @bot.message_handler(content_types=['text'])
 def level1_keyboard(message):
     """First keyboard level."""
@@ -32,7 +45,8 @@ def level1_keyboard(message):
         bot.send_message(
             message.chat.id, text='Что вы хотите выбрать?',
             reply_markup=utils.generate_markup(['Выбрать автора',
-                                                'Выбрать песню']))
+                                                'Выбрать песню'],
+                                               btn_home=False))
     elif message.text == 'Выбрать автора':
         bot.send_message(
             message.chat.id, text='С какой буквы начинается имя автора?',
@@ -55,13 +69,18 @@ def level2_keyboard(message, field):
     # "text" parameter in bot.send_message
     field_to_text = {'song': 'песню', 'author': 'автора'}
     field_to_keyboard = {'song': SONG_KEYBOARD, "author": AUTHOR_KEYBOARD}
-    if message.text not in field_to_keyboard[field]:
+
+    if is_home_button(message):
+        pass
+
+    elif message.text not in field_to_keyboard[field]:
         # If sent message not in reply markup
         bot.send_message(message.chat.id,
                          "Некорректный ввод, попробуйте снова",
                          reply_markup=utils.generate_markup(
                              field_to_keyboard[field]))
         bot.register_next_step_handler(message, level2_keyboard, field)
+
     else:
         db = database.Database(config.DATABASE_NAME)
         result = db.select_field_by_letter(letter=message.text.upper(),
@@ -81,7 +100,10 @@ def level2_keyboard(message, field):
 def level3_keyboard(message, field, previous_buttons):
     """Last keyboard level, where you choose song to send in group channel."""
 
-    if message.text not in previous_buttons:
+    if is_home_button(message):
+        pass
+
+    elif message.text not in previous_buttons:
         # If sent message not in reply markup
         bot.send_message(message.chat.id,
                          "Некорректный ввод, попробуйте снова",
@@ -105,7 +127,10 @@ def level3_keyboard(message, field, previous_buttons):
 def send_to_channel(message, previous_buttons):
     """Send chosen song to group channel."""
 
-    if message.text not in previous_buttons:
+    if is_home_button(message):
+        pass
+
+    elif message.text not in previous_buttons:
         # If sent message not in reply markup
         bot.send_message(message.chat.id,
                          "Некорректный ввод, попробуйте снова",
