@@ -142,7 +142,7 @@ def send_to_channel(message, previous_buttons):
                          text=f"{message.text} is next",)
         bot.send_message(chat_id=message.chat.id,
                          text="Для продолжения нажмите на кнопку",
-                         reply_markup=utils.generate_markup(['Начать работу']))
+                         reply_markup=utils.generate_markup([]))
 
 
 @bot.message_handler(content_types=['document'])
