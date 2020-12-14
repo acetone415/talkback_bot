@@ -7,16 +7,6 @@ import utils
 
 
 bot = TeleBot(config.TOKEN)
-AUTHOR_KEYBOARD, SONG_KEYBOARD = [], []
-
-
-@bot.message_handler(commands=["start"])
-def start_bot(message):
-    """Initialise bot setup after launching the bot."""
-    db = database.Database(config.DATABASE_NAME)
-    global AUTHOR_KEYBOARD, SONG_KEYBOARD
-    AUTHOR_KEYBOARD, SONG_KEYBOARD = db.get_keyboards()
-    db.close()
 
 
 @bot.message_handler(commands=["help"])
@@ -50,17 +40,17 @@ def level1_keyboard(message):
     elif message.text == 'Выбрать автора':
         bot.send_message(
             message.chat.id, text='С какой буквы начинается имя автора?',
-            reply_markup=utils.generate_markup(AUTHOR_KEYBOARD))
+            reply_markup=utils.generate_markup(config.AUTHOR_KEYBOARD))
         bot.register_next_step_handler(message, level2_keyboard,
-                                       field='author')
+                                       field='author', previous_buttons=config.AUTHOR_KEYBOARD)
     elif message.text == 'Выбрать песню':
         bot.send_message(
             message.chat.id, text='С какой буквы начинается название песни?',
-            reply_markup=utils.generate_markup(SONG_KEYBOARD))
-        bot.register_next_step_handler(message, level2_keyboard, field='song')
+            reply_markup=utils.generate_markup(config.SONG_KEYBOARD))
+        bot.register_next_step_handler(message, level2_keyboard, field='song', previous_buttons=config.SONG_KEYBOARD)
 
 
-def level2_keyboard(message, field):
+def level2_keyboard(message, field, previous_buttons):
     """Second keyboard level, where you chose first letter of author or song.
 
     :param field: (str) Field in DB by which song is selected
@@ -68,18 +58,16 @@ def level2_keyboard(message, field):
     # the dictionary is needed to substitute the field name into the
     # "text" parameter in bot.send_message
     field_to_text = {'song': 'песню', 'author': 'автора'}
-    field_to_keyboard = {'song': SONG_KEYBOARD, "author": AUTHOR_KEYBOARD}
 
     if is_home_button(message):
         pass
 
-    elif message.text not in field_to_keyboard[field]:
+    elif message.text not in previous_buttons:
         # If sent message not in reply markup
         bot.send_message(message.chat.id,
                          "Некорректный ввод, попробуйте снова",
-                         reply_markup=utils.generate_markup(
-                             field_to_keyboard[field]))
-        bot.register_next_step_handler(message, level2_keyboard, field)
+                         reply_markup=utils.generate_markup(previous_buttons))
+        bot.register_next_step_handler(message, level2_keyboard, field, previous_buttons)
 
     else:
         db = database.Database(config.DATABASE_NAME)
@@ -155,9 +143,8 @@ def download_file(message):
 
     db = database.Database(config.DATABASE_NAME)
     db.load_tracklist_from_file(config.TRACKLIST_NAME)
+    config.AUTHOR_KEYBOARD, config.SONG_KEYBOARD = db.get_keyboards()
     db.close()
-
-    bot.register_next_step_handler(message, start_bot)
 
 
 if __name__ == "__main__":
