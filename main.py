@@ -15,19 +15,6 @@ def print_help_info(message):
     bot.send_message(message.chat.id, text=utils.HELP_INFO)
 
 
-def is_home_button(message) -> bool:
-    """Check if message.text == 'В начало'.
-    :param message: Message object
-    :return: bool"""
-    if message.text == 'В начало':
-        bot.send_message(message.chat.id, "Нажмите кнопку для продожения",
-                         reply_markup=utils.generate_markup(['Начать работу'],
-                                                            btn_home=False))
-        bot.register_next_step_handler(message, level1_keyboard)
-        return True
-    return False
-
-
 @bot.message_handler(content_types=['text'])
 def level1_keyboard(message):
     """First keyboard level."""
@@ -50,87 +37,72 @@ def level1_keyboard(message):
         bot.register_next_step_handler(message, level2_keyboard, field='song', previous_buttons=config.SONG_KEYBOARD)
 
 
-def level2_keyboard(message, field, previous_buttons):
-    """Second keyboard level, where you chose first letter of author or song.
+def check_message_middleware(func):
+    def inner(message, *args, **kwargs):
+        if message.text == 'В начало':
+            bot.send_message(message.chat.id, "Нажмите кнопку для продолжения",
+                             reply_markup=utils.generate_markup(['Начать работу'],
+                                                                btn_home=False))
+            bot.register_next_step_handler(message, level1_keyboard)
 
-    :param field: (str) Field in DB by which song is selected
-    """
+        elif message.text not in kwargs['previous_buttons']:
+            # If sent message not in reply markup
+            bot.send_message(message.chat.id,
+                             "Некорректный ввод, попробуйте снова",
+                             reply_markup=utils.generate_markup(kwargs['previous_buttons']))
+            bot.register_next_step_handler(message, check_message_middleware(func), *args, **kwargs)
+        else:
+            func(message, *args, **kwargs)
+    return inner
+
+
+@check_message_middleware
+def level2_keyboard(message, *args, **kwargs):
+    """Second keyboard level, where you chose first letter of author or song."""
     # the dictionary is needed to substitute the field name into the
     # "text" parameter in bot.send_message
     field_to_text = {'song': 'песню', 'author': 'автора'}
 
-    if is_home_button(message):
-        pass
+    db = database.Database(config.DATABASE_NAME)
+    result = db.select_field_by_letter(letter=message.text.upper(),
+                                       field=kwargs['field'])
+    db.close()
 
-    elif message.text not in previous_buttons:
-        # If sent message not in reply markup
-        bot.send_message(message.chat.id,
-                         "Некорректный ввод, попробуйте снова",
-                         reply_markup=utils.generate_markup(previous_buttons))
-        bot.register_next_step_handler(message, level2_keyboard, field, previous_buttons)
+    buttons = [f'{i[0]}' for i in result]
+    markup = utils.generate_markup(buttons, row_width=2)
 
-    else:
-        db = database.Database(config.DATABASE_NAME)
-        result = db.select_field_by_letter(letter=message.text.upper(),
-                                           field=field)
-        db.close()
-
-        buttons = [f'{i[0]}' for i in result]
-        markup = utils.generate_markup(buttons, row_width=2)
-
-        bot.send_message(
-            message.chat.id, text=f"Выберите {field_to_text[field]}",
-            reply_markup=markup)
-        bot.register_next_step_handler(message, level3_keyboard, field=field,
-                                       previous_buttons=buttons)
+    bot.send_message(
+        message.chat.id, text=f"Выберите {field_to_text[kwargs['field']]}",
+        reply_markup=markup)
+    bot.register_next_step_handler(message, level3_keyboard, field=kwargs['field'],
+                                   previous_buttons=buttons)
 
 
-def level3_keyboard(message, field, previous_buttons):
+@check_message_middleware
+def level3_keyboard(message, *args, **kwargs):
     """Last keyboard level, where you choose song to send in group channel."""
 
-    if is_home_button(message):
-        pass
+    db = database.Database(config.DATABASE_NAME)
+    result = db.select_pair(item=message.text, field=kwargs['field'])
+    db.close()
 
-    elif message.text not in previous_buttons:
-        # If sent message not in reply markup
-        bot.send_message(message.chat.id,
-                         "Некорректный ввод, попробуйте снова",
-                         reply_markup=utils.generate_markup(previous_buttons))
-        bot.register_next_step_handler(message, level3_keyboard, field,
-                                       previous_buttons)
+    buttons = [f'{" - ".join(i)}' for i in result]
+    markup = utils.generate_markup(buttons, row_width=1)
 
-    else:
-        db = database.Database(config.DATABASE_NAME)
-        result = db.select_pair(item=message.text, field=field)
-        db.close()
-
-        buttons = [f'{" - ".join(i)}' for i in result]
-        markup = utils.generate_markup(buttons, row_width=1)
-
-        bot.send_message(message.chat.id, text='Выбирайте', reply_markup=markup)
-        bot.register_next_step_handler(message, send_to_channel,
-                                       previous_buttons=buttons)
+    bot.send_message(message.chat.id, text='Выбирайте', reply_markup=markup)
+    bot.register_next_step_handler(message, send_to_channel,
+                                   previous_buttons=buttons)
 
 
-def send_to_channel(message, previous_buttons):
+@check_message_middleware
+def send_to_channel(message, *args, **kwargs):
     """Send chosen song to group channel."""
 
-    if is_home_button(message):
-        pass
-
-    elif message.text not in previous_buttons:
-        # If sent message not in reply markup
-        bot.send_message(message.chat.id,
-                         "Некорректный ввод, попробуйте снова",
-                         reply_markup=utils.generate_markup(previous_buttons))
-        bot.register_next_step_handler(message, send_to_channel,
-                                       previous_buttons)
-    else:
-        bot.send_message(chat_id=config.GROUP_CHANNEL_ID,
-                         text=f"{message.text} is next",)
-        bot.send_message(chat_id=message.chat.id,
-                         text="Для продолжения нажмите на кнопку",
-                         reply_markup=utils.generate_markup([]))
+    bot.send_message(chat_id=config.GROUP_CHANNEL_ID,
+                     text=f"{message.text} is next",)
+    bot.send_message(chat_id=message.chat.id,
+                     text="Для продолжения нажмите на кнопку",
+                     reply_markup=utils.generate_markup([]))
 
 
 @bot.message_handler(content_types=['document'])
