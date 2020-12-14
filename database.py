@@ -69,7 +69,7 @@ class Database:
         song_1st_letters = row[1]
         return author_1st_letters, song_1st_letters
 
-    def select_field_by_letter(self, letter: str, field: str):
+    def select_field_by_letter(self, letter: str, field: str) -> list:
         """Return list of authors or songs, which names starts with letter.
 
         :param letter: (str) 1st letter in author or song name
@@ -81,7 +81,7 @@ class Database:
                                 WHERE {field} LIKE '{letter.upper()}%';""")
         return self.cursor.fetchall()
 
-    def select_pair(self, field: str, item: str):
+    def select_pair(self, field: str, item: str) -> list:
         """Return pair (author, song) from database, filtered by desired field.
 
         :param field: (str) field in DB to be selected
