@@ -1,14 +1,11 @@
 # Talkback Bot
-***
 
 ## Description
-***
 This bot allows to send next song from your tracklist to the group chat.
 This bot based on [pyTelegramBotAPI](https://github.com/eternnoir/pyTelegramBotAPI).
 
 
 ## How to run
-***
 
 * Clone the code from this repository
 * Fill _config.py_
