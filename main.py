@@ -1,18 +1,43 @@
 """Main Bot module."""
 
-from telebot import TeleBot
+from telebot import TeleBot, types
 import database
 import config
-import utils
 
 
 bot = TeleBot(config.TOKEN)
 
 
+def generate_markup(buttons,
+                    btn_back=False,
+                    btn_home=True,
+                    row_width=5) -> types.ReplyKeyboardMarkup:
+    """Generate ReplyKeyboardMarkup.
+
+    :param buttons: (list) List, containing button labels
+    :param btn_back: (bool) Adds button "Back" to keyboard if True
+    :param btn_home: (bool) Adds button "Home" to keyboard if True
+    :param row_width: (int) Row width in markup
+    :return markup: Keyboard markup object
+    """
+    buttons = [types.KeyboardButton(f'{i}') for i in buttons]
+    markup = types.ReplyKeyboardMarkup(resize_keyboard=True,
+                                       one_time_keyboard=True,
+                                       row_width=row_width)
+    markup.add(*buttons)
+    navigation = []
+    if btn_back:
+        navigation.append(types.KeyboardButton('Назад'))
+    if btn_home:
+        navigation.append(types.KeyboardButton('В начало'))
+    markup.row(*navigation)
+    return markup
+
+
 @bot.message_handler(commands=["help"])
 def print_help_info(message):
     """Print help information."""
-    bot.send_message(message.chat.id, text=utils.HELP_INFO)
+    bot.send_message(message.chat.id, text=config.HELP_INFO)
 
 
 @bot.message_handler(content_types=['text'])
@@ -21,36 +46,41 @@ def level1_keyboard(message):
     if message.text not in ['Выбрать автора', 'Выбрать песню']:
         bot.send_message(
             message.chat.id, text='Что вы хотите выбрать?',
-            reply_markup=utils.generate_markup(['Выбрать автора',
+            reply_markup=generate_markup(['Выбрать автора',
                                                 'Выбрать песню'],
-                                               btn_home=False))
+                                         btn_home=False))
     elif message.text == 'Выбрать автора':
         bot.send_message(
             message.chat.id, text='С какой буквы начинается имя автора?',
-            reply_markup=utils.generate_markup(config.AUTHOR_KEYBOARD))
-        bot.register_next_step_handler(message, level2_keyboard,
-                                       field='author', previous_buttons=config.AUTHOR_KEYBOARD)
+            reply_markup=generate_markup(config.AUTHOR_KEYBOARD))
+        bot.register_next_step_handler(message,
+                                       level2_keyboard,
+                                       field='author',
+                                       previous_buttons=config.AUTHOR_KEYBOARD)
     elif message.text == 'Выбрать песню':
         bot.send_message(
             message.chat.id, text='С какой буквы начинается название песни?',
-            reply_markup=utils.generate_markup(config.SONG_KEYBOARD))
-        bot.register_next_step_handler(message, level2_keyboard, field='song', previous_buttons=config.SONG_KEYBOARD)
+            reply_markup=generate_markup(config.SONG_KEYBOARD))
+        bot.register_next_step_handler(message, level2_keyboard, field='song',
+                                       previous_buttons=config.SONG_KEYBOARD)
 
 
 def check_message_middleware(func):
     def inner(message, *args, **kwargs):
         if message.text == 'В начало':
             bot.send_message(message.chat.id, "Нажмите кнопку для продолжения",
-                             reply_markup=utils.generate_markup(['Начать работу'],
-                                                                btn_home=False))
+                             reply_markup=generate_markup(['Начать работу'],
+                                                          btn_home=False))
             bot.register_next_step_handler(message, level1_keyboard)
 
         elif message.text not in kwargs['previous_buttons']:
             # If sent message not in reply markup
             bot.send_message(message.chat.id,
                              "Некорректный ввод, попробуйте снова",
-                             reply_markup=utils.generate_markup(kwargs['previous_buttons']))
-            bot.register_next_step_handler(message, check_message_middleware(func), *args, **kwargs)
+                             reply_markup=generate_markup(kwargs['previous_buttons']))
+            bot.register_next_step_handler(message,
+                                           check_message_middleware(func),
+                                           *args, **kwargs)
         else:
             func(message, *args, **kwargs)
     return inner
@@ -69,12 +99,15 @@ def level2_keyboard(message, *args, **kwargs):
     db.close()
 
     buttons = [f'{i[0]}' for i in result]
-    markup = utils.generate_markup(buttons, row_width=2)
+    markup = generate_markup(buttons, row_width=2)
 
     bot.send_message(
-        message.chat.id, text=f"Выберите {field_to_text[kwargs['field']]}",
+        message.chat.id,
+        text=f"Выберите {field_to_text[kwargs['field']]}",
         reply_markup=markup)
-    bot.register_next_step_handler(message, level3_keyboard, field=kwargs['field'],
+    bot.register_next_step_handler(message,
+                                   level3_keyboard,
+                                   field=kwargs['field'],
                                    previous_buttons=buttons)
 
 
@@ -87,7 +120,7 @@ def level3_keyboard(message, *args, **kwargs):
     db.close()
 
     buttons = [f'{" - ".join(i)}' for i in result]
-    markup = utils.generate_markup(buttons, row_width=1)
+    markup = generate_markup(buttons, row_width=1)
 
     bot.send_message(message.chat.id, text='Выбирайте', reply_markup=markup)
     bot.register_next_step_handler(message, send_to_channel,
@@ -102,7 +135,7 @@ def send_to_channel(message, *args, **kwargs):
                      text=f"{message.text} is next",)
     bot.send_message(chat_id=message.chat.id,
                      text="Для продолжения нажмите на кнопку",
-                     reply_markup=utils.generate_markup([]))
+                     reply_markup=generate_markup([]))
 
 
 @bot.message_handler(content_types=['document'])
