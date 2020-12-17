@@ -1,4 +1,4 @@
-# Talkback Bot
+# talkback_bot
 
 ## Description
 This bot allows to send next song from your tracklist to the group chat.
