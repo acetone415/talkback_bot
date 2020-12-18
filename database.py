@@ -3,6 +3,8 @@
 import sqlite3
 import re
 
+from config import DATABASE_NAME
+
 
 class Database:
     """Database class."""
@@ -95,3 +97,8 @@ class Database:
     def close(self):
         """Close connection with database."""
         self.connection.close()
+
+
+db = Database(DATABASE_NAME)
+AUTHOR_KEYBOARD, SONG_KEYBOARD = db.get_keyboards()
+db.close()
