@@ -2,8 +2,9 @@
 
 import sqlite3
 import re
+from os import path
 
-from config import DATABASE_NAME
+from config import DATABASE_NAME, TRACKLIST_NAME
 
 
 class Database:
@@ -99,6 +100,15 @@ class Database:
         self.connection.close()
 
 
-db = Database(DATABASE_NAME)
-AUTHOR_KEYBOARD, SONG_KEYBOARD = db.get_keyboards()
-db.close()
+try:
+    db = Database(DATABASE_NAME)
+    AUTHOR_KEYBOARD, SONG_KEYBOARD = db.get_keyboards()
+    db.close()
+except sqlite3.OperationalError:
+    if path.exists(f'{TRACKLIST_NAME}'):
+        db = Database(DATABASE_NAME)
+        db.load_tracklist_from_file(f"{TRACKLIST_NAME}")
+        AUTHOR_KEYBOARD, SONG_KEYBOARD = db.get_keyboards()
+        db.close()
+    else:
+        print("Error! There is no tracklist file!")

@@ -1,11 +1,36 @@
 """Main Bot module."""
 
+import sqlite3
 from telebot import TeleBot, types
 import database
 import config
 
 
 bot = TeleBot(config.TOKEN)
+CHAT_ID = None
+
+
+def check_message_middleware(func):
+    def inner(message, *args, **kwargs):
+        if message.text == 'В начало':
+            bot.send_message(message.chat.id, "Нажмите кнопку для продолжения",
+                             reply_markup=generate_markup(['Начать работу'],
+                                                          btn_home=False))
+            bot.register_next_step_handler(message, level1_keyboard)
+
+        elif message.text not in kwargs['previous_buttons']:
+            # If sent message not in reply markup
+            bot.send_message(message.chat.id,
+                             "Некорректный ввод, попробуйте снова",
+                             reply_markup=generate_markup(
+                                 kwargs['previous_buttons']))
+            bot.register_next_step_handler(message,
+                                           check_message_middleware(func),
+                                           *args, **kwargs)
+        else:
+            func(message, *args, **kwargs)
+
+    return inner
 
 
 def generate_markup(buttons,
@@ -39,10 +64,10 @@ def print_help_info(message):
     """Print help information."""
     bot.send_message(message.chat.id, text=config.HELP_INFO)
 
-
 @bot.message_handler(content_types=['text'])
 def level1_keyboard(message):
     """First keyboard level."""
+    CHAT_ID = message.chat.id
     if message.text not in ['Выбрать автора', 'Выбрать песню']:
         bot.send_message(
             message.chat.id, text='Что вы хотите выбрать?',
@@ -62,27 +87,6 @@ def level1_keyboard(message):
             reply_markup=generate_markup(database.SONG_KEYBOARD))
         bot.register_next_step_handler(message, level2_keyboard, field='song',
                                        previous_buttons=database.SONG_KEYBOARD)
-
-
-def check_message_middleware(func):
-    def inner(message, *args, **kwargs):
-        if message.text == 'В начало':
-            bot.send_message(message.chat.id, "Нажмите кнопку для продолжения",
-                             reply_markup=generate_markup(['Начать работу'],
-                                                          btn_home=False))
-            bot.register_next_step_handler(message, level1_keyboard)
-
-        elif message.text not in kwargs['previous_buttons']:
-            # If sent message not in reply markup
-            bot.send_message(message.chat.id,
-                             "Некорректный ввод, попробуйте снова",
-                             reply_markup=generate_markup(kwargs['previous_buttons']))
-            bot.register_next_step_handler(message,
-                                           check_message_middleware(func),
-                                           *args, **kwargs)
-        else:
-            func(message, *args, **kwargs)
-    return inner
 
 
 @check_message_middleware
@@ -153,3 +157,5 @@ def download_file(message):
 
 if __name__ == "__main__":
     bot.infinity_polling()
+
+
