@@ -46,23 +46,22 @@ def level1_keyboard(message):
     if message.text not in ['Выбрать автора', 'Выбрать песню']:
         bot.send_message(
             message.chat.id, text='Что вы хотите выбрать?',
-            reply_markup=generate_markup(['Выбрать автора',
-                                                'Выбрать песню'],
+            reply_markup=generate_markup(['Выбрать автора', 'Выбрать песню'],
                                          btn_home=False))
     elif message.text == 'Выбрать автора':
         bot.send_message(
             message.chat.id, text='С какой буквы начинается имя автора?',
-            reply_markup=generate_markup(config.AUTHOR_KEYBOARD))
+            reply_markup=generate_markup(database.AUTHOR_KEYBOARD))
         bot.register_next_step_handler(message,
                                        level2_keyboard,
                                        field='author',
-                                       previous_buttons=config.AUTHOR_KEYBOARD)
+                                       previous_buttons=database.AUTHOR_KEYBOARD)
     elif message.text == 'Выбрать песню':
         bot.send_message(
             message.chat.id, text='С какой буквы начинается название песни?',
-            reply_markup=generate_markup(config.SONG_KEYBOARD))
+            reply_markup=generate_markup(database.SONG_KEYBOARD))
         bot.register_next_step_handler(message, level2_keyboard, field='song',
-                                       previous_buttons=config.SONG_KEYBOARD)
+                                       previous_buttons=database.SONG_KEYBOARD)
 
 
 def check_message_middleware(func):
@@ -148,7 +147,7 @@ def download_file(message):
 
     db = database.Database(config.DATABASE_NAME)
     db.load_tracklist_from_file(config.TRACKLIST_NAME)
-    config.AUTHOR_KEYBOARD, config.SONG_KEYBOARD = db.get_keyboards()
+    database.AUTHOR_KEYBOARD, database.SONG_KEYBOARD = db.get_keyboards()
     db.close()
 
 
