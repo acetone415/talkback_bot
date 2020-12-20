@@ -1,13 +1,11 @@
 """Main Bot module."""
 
-import sqlite3
 from telebot import TeleBot, types
 import database
 import config
 
 
 bot = TeleBot(config.TOKEN)
-CHAT_ID = None
 
 
 def check_message_middleware(func):
@@ -64,10 +62,10 @@ def print_help_info(message):
     """Print help information."""
     bot.send_message(message.chat.id, text=config.HELP_INFO)
 
+
 @bot.message_handler(content_types=['text'])
 def level1_keyboard(message):
     """First keyboard level."""
-    CHAT_ID = message.chat.id
     if message.text not in ['Выбрать автора', 'Выбрать песню']:
         bot.send_message(
             message.chat.id, text='Что вы хотите выбрать?',
