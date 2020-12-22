@@ -1,14 +1,29 @@
 """Main Bot module."""
 
+import sqlite3
 from telebot import TeleBot, types
 import database
 import config
 
 
 bot = TeleBot(config.TOKEN)
+def new():
+    pass
+
+
+
+def check_database(func):
+    def inner(message, *args, **kwargs):
+        try:
+            db = database.Database(config.DATABASE_NAME)
+            pass
+
+        except sqlite3.OperationalError:
+            pass
 
 
 def check_message_middleware(func):
+    """Check if the entered text matches the keyboard keys.""" 
     def inner(message, *args, **kwargs):
         if message.text == 'В начало':
             bot.send_message(message.chat.id, "Нажмите кнопку для продолжения",
@@ -55,26 +70,6 @@ def generate_markup(buttons,
         navigation.append(types.KeyboardButton('В начало'))
     markup.row(*navigation)
     return markup
-
-def check_message_middleware(func):
-    def inner(message, *args, **kwargs):
-        if message.text == 'В начало':
-            bot.send_message(message.chat.id, "Нажмите кнопку для продолжения",
-                             reply_markup=generate_markup(['Начать работу'],
-                                                          btn_home=False))
-            bot.register_next_step_handler(message, level1_keyboard)
-
-        elif message.text not in kwargs['previous_buttons']:
-            # If sent message not in reply markup
-            bot.send_message(message.chat.id,
-                             "Некорректный ввод, попробуйте снова",
-                             reply_markup=generate_markup(kwargs['previous_buttons']))
-            bot.register_next_step_handler(message,
-                                           check_message_middleware(func),
-                                           *args, **kwargs)
-        else:
-            func(message, *args, **kwargs)
-    return inner
 
 
 @bot.message_handler(commands=["help"])

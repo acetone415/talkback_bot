@@ -17,7 +17,10 @@ class Database:
 
     def create_tables(self):
         """Create tables tracklist and keyboards from DB.
-        Table tracklist contains """
+
+        Table 'tracklist' contains authors and song names.
+        Table 'keyboards' contains first letters of author names and song names.
+        """
         self.cursor.execute("""CREATE TABLE IF NOT EXISTS tracklist (
                                 "id" INTEGER PRIMARY KEY AUTOINCREMENT,
                                 "author" TEXT,
@@ -94,6 +97,13 @@ class Database:
         self.cursor.execute(f"""SELECT author, song FROM tracklist
                                    WHERE {field} = '{item}';""")
         return self.cursor.fetchall()
+
+    def check_tables(self):
+        """Check the existence of tables 'tracklist' and 'keyboards' in the DB."""
+        self.cursor.execute("""SELECT count(*) FROM sqlite_master
+                                WHERE type='table'
+                                AND name in ('tracklist', 'keyboards');
+                            """)
 
     def close(self):
         """Close connection with database."""
