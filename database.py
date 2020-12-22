@@ -2,7 +2,7 @@
 
 import sqlite3
 import re
-from os import path
+from os.path import exists
 
 from config import DATABASE_NAME, TRACKLIST_NAME
 
@@ -98,12 +98,15 @@ class Database:
                                    WHERE {field} = '{item}';""")
         return self.cursor.fetchall()
 
-    def check_tables(self):
+    def check_tables_existense(self):
         """Check the existence of tables 'tracklist' and 'keyboards' in the DB."""
         self.cursor.execute("""SELECT count(*) FROM sqlite_master
                                 WHERE type='table'
                                 AND name in ('tracklist', 'keyboards');
                             """)
+        if self.cursor.fetchone()[0] == 2:
+            return True
+        return False
 
     def close(self):
         """Close connection with database."""
@@ -115,10 +118,11 @@ try:
     AUTHOR_KEYBOARD, SONG_KEYBOARD = db.get_keyboards()
     db.close()
 except sqlite3.OperationalError:
-    if path.exists(f'{TRACKLIST_NAME}'):
+    if exists(f'{TRACKLIST_NAME}'):
         db = Database(DATABASE_NAME)
         db.load_tracklist_from_file(f"{TRACKLIST_NAME}")
         AUTHOR_KEYBOARD, SONG_KEYBOARD = db.get_keyboards()
         db.close()
     else:
+        AUTHOR_KEYBOARD, SONG_KEYBOARD = [], []
         print("Error! There is no tracklist file!")
