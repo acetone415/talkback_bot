@@ -1,1 +1,2 @@
+environs==9.2.0
 pyTelegramBotAPI==3.7.4
