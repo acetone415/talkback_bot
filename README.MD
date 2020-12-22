@@ -8,7 +8,7 @@ This bot based on [pyTelegramBotAPI](https://github.com/eternnoir/pyTelegramBotA
 ## How to run
 
 * Clone the code from this repository
-* Fill _.env_ file:
+* Fill _.env_ file (.env.example as example):
   * First, you'll need a Telegram Bot Token, you can get it via BotFather 
 ([more info here](https://core.telegram.org/bots)).  
   * Enter your Token in _.env_:
