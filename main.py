@@ -56,6 +56,26 @@ def generate_markup(buttons,
     markup.row(*navigation)
     return markup
 
+def check_message_middleware(func):
+    def inner(message, *args, **kwargs):
+        if message.text == 'В начало':
+            bot.send_message(message.chat.id, "Нажмите кнопку для продолжения",
+                             reply_markup=generate_markup(['Начать работу'],
+                                                          btn_home=False))
+            bot.register_next_step_handler(message, level1_keyboard)
+
+        elif message.text not in kwargs['previous_buttons']:
+            # If sent message not in reply markup
+            bot.send_message(message.chat.id,
+                             "Некорректный ввод, попробуйте снова",
+                             reply_markup=generate_markup(kwargs['previous_buttons']))
+            bot.register_next_step_handler(message,
+                                           check_message_middleware(func),
+                                           *args, **kwargs)
+        else:
+            func(message, *args, **kwargs)
+    return inner
+
 
 @bot.message_handler(commands=["help"])
 def print_help_info(message):

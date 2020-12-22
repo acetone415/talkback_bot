@@ -1,9 +1,16 @@
 """This module contains configuration variables."""
 
-TOKEN = "1313099557:AAGvmoZWP85GRKrLpjldczj0PZZHxi-fCTo"
+from environs import Env
+
+
+env = Env()
+env.read_env()
+
+
+TOKEN = env("TOKEN")
+GROUP_CHANNEL_ID = env("GROUP_CHANNEL_ID")
 TRACKLIST_NAME = "tracklist.txt"
 DATABASE_NAME = "tracklist.db"
-GROUP_CHANNEL_ID = '@testchannel2111'
 HELP_INFO = """Для того, чтобы перейти к выбору песни, введите любой символ
 Для обновления треклиста просто загрузите его"""
 
