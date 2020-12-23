@@ -124,5 +124,5 @@ except sqlite3.OperationalError:
         AUTHOR_KEYBOARD, SONG_KEYBOARD = db.get_keyboards()
         db.close()
     else:
-        AUTHOR_KEYBOARD, SONG_KEYBOARD = [], []
+        AUTHOR_KEYBOARD, SONG_KEYBOARD = None, None 
         print("Error! There is no tracklist file!")

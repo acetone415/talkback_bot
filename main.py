@@ -39,12 +39,10 @@ def generate_markup(buttons,
 def check_database(func):
     """Check tables existense in DB."""
     def inner(message, *args, **kwargs):
-        db = database.Database(config.DATABASE_NAME)
-        if (database.AUTHOR_KEYBOARD and database.SONG_KEYBOARD
-                and db.check_tables_existense()):
+        try:
             func(message, *args, **kwargs)
 
-        else:
+        except (OperationalError, TypeError):
             if exists(f'{config.TRACKLIST_NAME}'):
                 db = database.Database(config.DATABASE_NAME)
                 db.load_tracklist_from_file(f"{config.TRACKLIST_NAME}")
@@ -53,11 +51,9 @@ def check_database(func):
                 db.close()
             else:
                 bot.send_message(
-                    message.chat.id,
-                    text="Загрузите треклист",
-                    reply_markup=generate_markup([]))
-                bot.register_next_step_handler(
-                    message, level1_keyboard)
+                        message.chat.id,
+                        text="Произошла ошибка. Загрузите треклист.",
+                        reply_markup=generate_markup([]))
 
     return inner
 
@@ -90,7 +86,6 @@ def check_message_middleware(func):
 def print_help_info(message):
     """Print help information."""
     bot.send_message(message.chat.id, text=config.HELP_INFO)
-
 
 
 @bot.message_handler(content_types=['text'])
