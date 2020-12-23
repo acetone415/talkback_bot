@@ -2,8 +2,9 @@
 
 import sqlite3
 import re
+from os.path import exists
 
-from config import DATABASE_NAME
+from config import DATABASE_NAME, TRACKLIST_NAME
 
 
 class Database:
@@ -16,7 +17,10 @@ class Database:
 
     def create_tables(self):
         """Create tables tracklist and keyboards from DB.
-        Table tracklist contains """
+
+        Table 'tracklist' contains authors and song names.
+        Table 'keyboards' contains first letters of author names and song names.
+        """
         self.cursor.execute("""CREATE TABLE IF NOT EXISTS tracklist (
                                 "id" INTEGER PRIMARY KEY AUTOINCREMENT,
                                 "author" TEXT,
@@ -99,6 +103,16 @@ class Database:
         self.connection.close()
 
 
-db = Database(DATABASE_NAME)
-AUTHOR_KEYBOARD, SONG_KEYBOARD = db.get_keyboards()
-db.close()
+try:
+    db = Database(DATABASE_NAME)
+    AUTHOR_KEYBOARD, SONG_KEYBOARD = db.get_keyboards()
+    db.close()
+except sqlite3.OperationalError:
+    if exists(f'{TRACKLIST_NAME}'):
+        db = Database(DATABASE_NAME)
+        db.load_tracklist_from_file(f"{TRACKLIST_NAME}")
+        AUTHOR_KEYBOARD, SONG_KEYBOARD = db.get_keyboards()
+        db.close()
+    else:
+        AUTHOR_KEYBOARD, SONG_KEYBOARD = None, None 
+        print("Error! There is no tracklist file!")

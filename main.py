@@ -1,5 +1,7 @@
 """Main Bot module."""
 
+from os.path import exists
+from sqlite3 import OperationalError
 from telebot import TeleBot, types
 import database
 import config
@@ -33,7 +35,31 @@ def generate_markup(buttons,
     markup.row(*navigation)
     return markup
 
+
+def check_database(func):
+    """Check tables existense in DB."""
+    def inner(message, *args, **kwargs):
+        try:
+            func(message, *args, **kwargs)
+
+        except (OperationalError, TypeError):
+            if exists(f'{config.TRACKLIST_NAME}'):
+                db = database.Database(config.DATABASE_NAME)
+                db.load_tracklist_from_file(f"{config.TRACKLIST_NAME}")
+                database.AUTHOR_KEYBOARD, database.SONG_KEYBOARD =\
+                    db.get_keyboards()
+                db.close()
+            else:
+                bot.send_message(
+                        message.chat.id,
+                        text="Произошла ошибка. Загрузите треклист.",
+                        reply_markup=generate_markup([]))
+
+    return inner
+
+
 def check_message_middleware(func):
+    """Check if the entered text matches the keyboard keys."""
     def inner(message, *args, **kwargs):
         if message.text == 'В начало':
             bot.send_message(message.chat.id, "Нажмите кнопку для продолжения",
@@ -45,12 +71,14 @@ def check_message_middleware(func):
             # If sent message not in reply markup
             bot.send_message(message.chat.id,
                              "Некорректный ввод, попробуйте снова",
-                             reply_markup=generate_markup(kwargs['previous_buttons']))
+                             reply_markup=generate_markup(
+                                 kwargs['previous_buttons']))
             bot.register_next_step_handler(message,
                                            check_message_middleware(func),
                                            *args, **kwargs)
         else:
             func(message, *args, **kwargs)
+
     return inner
 
 
@@ -61,6 +89,7 @@ def print_help_info(message):
 
 
 @bot.message_handler(content_types=['text'])
+@check_database
 def level1_keyboard(message):
     """First keyboard level."""
     if message.text not in ['Выбрать автора', 'Выбрать песню']:
@@ -84,6 +113,7 @@ def level1_keyboard(message):
                                        previous_buttons=database.SONG_KEYBOARD)
 
 
+@check_database
 @check_message_middleware
 def level2_keyboard(message, *args, **kwargs):
     """Second keyboard level, where you chose first letter of author or song."""
@@ -109,10 +139,10 @@ def level2_keyboard(message, *args, **kwargs):
                                    previous_buttons=buttons)
 
 
+@check_database
 @check_message_middleware
 def level3_keyboard(message, *args, **kwargs):
     """Last keyboard level, where you choose song to send in group channel."""
-
     db = database.Database(config.DATABASE_NAME)
     result = db.select_pair(item=message.text, field=kwargs['field'])
     db.close()
@@ -125,10 +155,10 @@ def level3_keyboard(message, *args, **kwargs):
                                    previous_buttons=buttons)
 
 
+@check_database
 @check_message_middleware
 def send_to_channel(message, *args, **kwargs):
     """Send chosen song to group channel."""
-
     bot.send_message(chat_id=config.GROUP_CHANNEL_ID,
                      text=f"{message.text} is next",)
     bot.send_message(chat_id=message.chat.id,
