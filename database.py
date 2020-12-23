@@ -98,16 +98,6 @@ class Database:
                                    WHERE {field} = '{item}';""")
         return self.cursor.fetchall()
 
-    def check_tables_existense(self):
-        """Check the existence of tables 'tracklist' and 'keyboards' in the DB."""
-        self.cursor.execute("""SELECT count(*) FROM sqlite_master
-                                WHERE type='table'
-                                AND name in ('tracklist', 'keyboards');
-                            """)
-        if self.cursor.fetchone()[0] == 2:
-            return True
-        return False
-
     def close(self):
         """Close connection with database."""
         self.connection.close()
