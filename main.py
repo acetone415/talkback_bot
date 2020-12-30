@@ -8,6 +8,7 @@ import config
 
 
 bot = TeleBot(config.TOKEN)
+db = database.Database(config.DATABASE_NAME)
 
 
 def generate_markup(buttons,
@@ -43,12 +44,10 @@ def check_database(func):
             func(message, *args, **kwargs)
 
         except (OperationalError, TypeError):
-            if exists(f'{config.TRACKLIST_NAME}'):
-                db = database.Database(config.DATABASE_NAME)
-                db.load_tracklist_from_file(f"{config.TRACKLIST_NAME}")
+            if exists(config.TRACKLIST_NAME):
+                db.load_tracklist_from_file(config.TRACKLIST_NAME)
                 database.AUTHOR_KEYBOARD, database.SONG_KEYBOARD =\
                     db.get_keyboards()
-                db.close()
             else:
                 bot.send_message(
                         message.chat.id,
@@ -121,10 +120,8 @@ def level2_keyboard(message, *args, **kwargs):
     # "text" parameter in bot.send_message
     field_to_text = {'song': 'песню', 'author': 'автора'}
 
-    db = database.Database(config.DATABASE_NAME)
     result = db.select_field_by_letter(letter=message.text.upper(),
                                        field=kwargs['field'])
-    db.close()
 
     buttons = [f'{i[0]}' for i in result]
     markup = generate_markup(buttons, row_width=2)
@@ -143,9 +140,7 @@ def level2_keyboard(message, *args, **kwargs):
 @check_message_middleware
 def level3_keyboard(message, *args, **kwargs):
     """Last keyboard level, where you choose song to send in group channel."""
-    db = database.Database(config.DATABASE_NAME)
     result = db.select_pair(item=message.text, field=kwargs['field'])
-    db.close()
 
     buttons = [f'{" - ".join(i)}' for i in result]
     markup = generate_markup(buttons, row_width=1)
@@ -174,10 +169,8 @@ def download_file(message):
     with open(config.TRACKLIST_NAME, 'wb') as new_file:
         new_file.write(downloaded_file)
 
-    db = database.Database(config.DATABASE_NAME)
     db.load_tracklist_from_file(config.TRACKLIST_NAME)
     database.AUTHOR_KEYBOARD, database.SONG_KEYBOARD = db.get_keyboards()
-    db.close()
 
 
 if __name__ == "__main__":

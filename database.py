@@ -12,7 +12,7 @@ class Database:
 
     def __init__(self, database):
         """Initialise connection with DB."""
-        self.connection = sqlite3.connect(database)
+        self.connection = sqlite3.connect(database, check_same_thread=False)
         self.cursor = self.connection.cursor()
 
     def create_tables(self):
@@ -108,11 +108,11 @@ try:
     AUTHOR_KEYBOARD, SONG_KEYBOARD = db.get_keyboards()
     db.close()
 except sqlite3.OperationalError:
-    if exists(f'{TRACKLIST_NAME}'):
+    if exists(TRACKLIST_NAME):
         db = Database(DATABASE_NAME)
-        db.load_tracklist_from_file(f"{TRACKLIST_NAME}")
+        db.load_tracklist_from_file(TRACKLIST_NAME)
         AUTHOR_KEYBOARD, SONG_KEYBOARD = db.get_keyboards()
         db.close()
     else:
-        AUTHOR_KEYBOARD, SONG_KEYBOARD = None, None 
-        print("Error! There is no tracklist file!")
+        AUTHOR_KEYBOARD, SONG_KEYBOARD = None, None
+        print("Error! Load tracklist file! ")
