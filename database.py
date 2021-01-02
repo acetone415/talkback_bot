@@ -16,6 +16,7 @@ class Database:
         """Initialise connection with DB."""
         self.connection = sqlite3.connect(database, check_same_thread=False)
         self.cursor = self.connection.cursor()
+        Database.AUTHOR_KEYBOARD, Database.SONG_KEYBOARD = self.get_keyboards()
 
     def create_tables(self):
         """Create tables tracklist and keyboards from DB.
@@ -111,7 +112,6 @@ except sqlite3.OperationalError:
     if exists(TRACKLIST_NAME):
         db = Database(DATABASE_NAME)
         db.load_tracklist_from_file(TRACKLIST_NAME)
-        AUTHOR_KEYBOARD, SONG_KEYBOARD = db.get_keyboards()
+        Database.AUTHOR_KEYBOARD, Database.SONG_KEYBOARD = db.get_keyboards()
     else:
-        AUTHOR_KEYBOARD, SONG_KEYBOARD = None, None
         print("Error! Load tracklist file!")
