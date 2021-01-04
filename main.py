@@ -49,7 +49,7 @@ def check_database(func):
         try:
             func(message, *args, **kwargs)
 
-        except (OperationalError, TypeError):
+        except (OperationalError, AttributeError):
             if exists(config.TRACKLIST_NAME):
                 db.load_tracklist_from_file(config.TRACKLIST_NAME)
                 db.AUTHOR_KEYBOARD, db.SONG_KEYBOARD =\
