@@ -3,7 +3,7 @@
 from os.path import exists
 from sqlite3 import OperationalError
 from telebot import TeleBot, types
-import database
+from database import db
 import config
 
 
@@ -37,18 +37,30 @@ def generate_markup(buttons,
 
 
 def check_database(func):
-    """Check tables existense in DB."""
+    """Check tables existense in DB.
+
+    If something happened with database for example a table was deleted
+    the bot will try to load the tracklist into the database (if it exists)
+    and will repeat the handler on which the error occurred
+    If there is no file tracklist.txt, then the Bot will ask you to download it.
+    """
+
     def inner(message, *args, **kwargs):
         try:
             func(message, *args, **kwargs)
 
-        except (OperationalError, TypeError):
-            if exists(f'{config.TRACKLIST_NAME}'):
-                db = database.Database(config.DATABASE_NAME)
-                db.load_tracklist_from_file(f"{config.TRACKLIST_NAME}")
-                database.AUTHOR_KEYBOARD, database.SONG_KEYBOARD =\
+        except (OperationalError, AttributeError):
+            if exists(config.TRACKLIST_NAME):
+                db.load_tracklist_from_file(config.TRACKLIST_NAME)
+                db.AUTHOR_KEYBOARD, db.SONG_KEYBOARD =\
                     db.get_keyboards()
-                db.close()
+                bot.send_message(
+                    message.chat.id,
+                    "Произошла ошибка. Повторите попытку",
+                    reply_markup=generate_markup(["Повторить ввод"])
+                )
+                bot.register_next_step_handler(message, func, *args, **kwargs)
+
             else:
                 bot.send_message(
                         message.chat.id,
@@ -58,7 +70,7 @@ def check_database(func):
     return inner
 
 
-def check_message_middleware(func):
+def check_message(func):
     """Check if the entered text matches the keyboard keys."""
     def inner(message, *args, **kwargs):
         if message.text == 'В начало':
@@ -74,7 +86,7 @@ def check_message_middleware(func):
                              reply_markup=generate_markup(
                                  kwargs['previous_buttons']))
             bot.register_next_step_handler(message,
-                                           check_message_middleware(func),
+                                           check_message(func),
                                            *args, **kwargs)
         else:
             func(message, *args, **kwargs)
@@ -100,31 +112,29 @@ def level1_keyboard(message):
     elif message.text == 'Выбрать автора':
         bot.send_message(
             message.chat.id, text='С какой буквы начинается имя автора?',
-            reply_markup=generate_markup(database.AUTHOR_KEYBOARD))
+            reply_markup=generate_markup(db.AUTHOR_KEYBOARD))
         bot.register_next_step_handler(message,
                                        level2_keyboard,
                                        field='author',
-                                       previous_buttons=database.AUTHOR_KEYBOARD)
+                                       previous_buttons=db.AUTHOR_KEYBOARD)
     elif message.text == 'Выбрать песню':
         bot.send_message(
             message.chat.id, text='С какой буквы начинается название песни?',
-            reply_markup=generate_markup(database.SONG_KEYBOARD))
+            reply_markup=generate_markup(db.SONG_KEYBOARD))
         bot.register_next_step_handler(message, level2_keyboard, field='song',
-                                       previous_buttons=database.SONG_KEYBOARD)
+                                       previous_buttons=db.SONG_KEYBOARD)
 
 
 @check_database
-@check_message_middleware
+@check_message
 def level2_keyboard(message, *args, **kwargs):
     """Second keyboard level, where you chose first letter of author or song."""
     # the dictionary is needed to substitute the field name into the
     # "text" parameter in bot.send_message
     field_to_text = {'song': 'песню', 'author': 'автора'}
 
-    db = database.Database(config.DATABASE_NAME)
     result = db.select_field_by_letter(letter=message.text.upper(),
                                        field=kwargs['field'])
-    db.close()
 
     buttons = [f'{i[0]}' for i in result]
     markup = generate_markup(buttons, row_width=2)
@@ -140,12 +150,10 @@ def level2_keyboard(message, *args, **kwargs):
 
 
 @check_database
-@check_message_middleware
+@check_message
 def level3_keyboard(message, *args, **kwargs):
     """Last keyboard level, where you choose song to send in group channel."""
-    db = database.Database(config.DATABASE_NAME)
     result = db.select_pair(item=message.text, field=kwargs['field'])
-    db.close()
 
     buttons = [f'{" - ".join(i)}' for i in result]
     markup = generate_markup(buttons, row_width=1)
@@ -155,8 +163,7 @@ def level3_keyboard(message, *args, **kwargs):
                                    previous_buttons=buttons)
 
 
-@check_database
-@check_message_middleware
+@check_message
 def send_to_channel(message, *args, **kwargs):
     """Send chosen song to group channel."""
     bot.send_message(chat_id=config.GROUP_CHANNEL_ID,
@@ -174,10 +181,8 @@ def download_file(message):
     with open(config.TRACKLIST_NAME, 'wb') as new_file:
         new_file.write(downloaded_file)
 
-    db = database.Database(config.DATABASE_NAME)
     db.load_tracklist_from_file(config.TRACKLIST_NAME)
-    database.AUTHOR_KEYBOARD, database.SONG_KEYBOARD = db.get_keyboards()
-    db.close()
+    db.AUTHOR_KEYBOARD, db.SONG_KEYBOARD = db.get_keyboards()
 
 
 if __name__ == "__main__":

@@ -13,5 +13,3 @@ TRACKLIST_NAME = "tracklist.txt"
 DATABASE_NAME = "tracklist.db"
 HELP_INFO = """Для того, чтобы перейти к выбору песни, введите любой символ
 Для обновления треклиста просто загрузите его"""
-
-
