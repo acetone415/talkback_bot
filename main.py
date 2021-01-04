@@ -56,7 +56,7 @@ def check_database(func):
                     db.get_keyboards()
                 bot.send_message(
                     message.chat.id,
-                    "Произошла ошибка.Повторите попытку",
+                    "Произошла ошибка. Повторите попытку",
                     reply_markup=generate_markup(["Повторить ввод"])
                 )
                 bot.register_next_step_handler(message, func, *args, **kwargs)
@@ -163,7 +163,6 @@ def level3_keyboard(message, *args, **kwargs):
                                    previous_buttons=buttons)
 
 
-@check_database
 @check_message
 def send_to_channel(message, *args, **kwargs):
     """Send chosen song to group channel."""
