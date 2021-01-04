@@ -10,19 +10,17 @@ from config import DATABASE_NAME, TRACKLIST_NAME
 class Database:
     """Database class."""
 
-    AUTHOR_KEYBOARD, SONG_KEYBOARD = None, None
-
     def __init__(self, database):
         """Initialise connection with DB."""
         self.connection = sqlite3.connect(database, check_same_thread=False)
         self.cursor = self.connection.cursor()
         try:
-            Database.AUTHOR_KEYBOARD, Database.SONG_KEYBOARD = self.get_keyboards()
+            self.AUTHOR_KEYBOARD, self.SONG_KEYBOARD = self.get_keyboards()
 
         except sqlite3.OperationalError:
             if exists(TRACKLIST_NAME):
                 self.load_tracklist_from_file(TRACKLIST_NAME)
-                Database.AUTHOR_KEYBOARD, Database.SONG_KEYBOARD = self.get_keyboards()
+                self.AUTHOR_KEYBOARD, self.SONG_KEYBOARD = self.get_keyboards()
             else:
                 print("Load tracklist!")
 

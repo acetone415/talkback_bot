@@ -3,7 +3,7 @@
 from os.path import exists
 from sqlite3 import OperationalError
 from telebot import TeleBot, types
-from database import Database, db
+from database import db
 import config
 
 
@@ -45,7 +45,7 @@ def check_database(func):
         except (OperationalError, TypeError):
             if exists(config.TRACKLIST_NAME):
                 db.load_tracklist_from_file(config.TRACKLIST_NAME)
-                Database.AUTHOR_KEYBOARD, Database.SONG_KEYBOARD =\
+                db.AUTHOR_KEYBOARD, db.SONG_KEYBOARD =\
                     db.get_keyboards()
             else:
                 bot.send_message(
@@ -98,17 +98,17 @@ def level1_keyboard(message):
     elif message.text == 'Выбрать автора':
         bot.send_message(
             message.chat.id, text='С какой буквы начинается имя автора?',
-            reply_markup=generate_markup(Database.AUTHOR_KEYBOARD))
+            reply_markup=generate_markup(db.AUTHOR_KEYBOARD))
         bot.register_next_step_handler(message,
                                        level2_keyboard,
                                        field='author',
-                                       previous_buttons=Database.AUTHOR_KEYBOARD)
+                                       previous_buttons=db.AUTHOR_KEYBOARD)
     elif message.text == 'Выбрать песню':
         bot.send_message(
             message.chat.id, text='С какой буквы начинается название песни?',
-            reply_markup=generate_markup(Database.SONG_KEYBOARD))
+            reply_markup=generate_markup(db.SONG_KEYBOARD))
         bot.register_next_step_handler(message, level2_keyboard, field='song',
-                                       previous_buttons=Database.SONG_KEYBOARD)
+                                       previous_buttons=db.SONG_KEYBOARD)
 
 
 @check_database
@@ -169,7 +169,7 @@ def download_file(message):
         new_file.write(downloaded_file)
 
     db.load_tracklist_from_file(config.TRACKLIST_NAME)
-    Database.AUTHOR_KEYBOARD, Database.SONG_KEYBOARD = db.get_keyboards()
+    db.AUTHOR_KEYBOARD, db.SONG_KEYBOARD = db.get_keyboards()
 
 
 if __name__ == "__main__":
