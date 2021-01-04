@@ -37,7 +37,14 @@ def generate_markup(buttons,
 
 
 def check_database(func):
-    """Check tables existense in DB."""
+    """Check tables existense in DB.
+
+    If something happened with database for example a table was deleted
+    the bot will try to load the tracklist into the database (if it exists)
+    and will repeat the handler on which the error occurred
+    If there is no file tracklist.txt, then the Bot will ask you to download it.
+    """
+
     def inner(message, *args, **kwargs):
         try:
             func(message, *args, **kwargs)
@@ -47,6 +54,13 @@ def check_database(func):
                 db.load_tracklist_from_file(config.TRACKLIST_NAME)
                 db.AUTHOR_KEYBOARD, db.SONG_KEYBOARD =\
                     db.get_keyboards()
+                bot.send_message(
+                    message.chat.id,
+                    "Произошла ошибка.Повторите попытку",
+                    reply_markup=generate_markup(["Повторить ввод"])
+                )
+                bot.register_next_step_handler(message, func, *args, **kwargs)
+
             else:
                 bot.send_message(
                         message.chat.id,
@@ -56,7 +70,7 @@ def check_database(func):
     return inner
 
 
-def check_message_middleware(func):
+def check_message(func):
     """Check if the entered text matches the keyboard keys."""
     def inner(message, *args, **kwargs):
         if message.text == 'В начало':
@@ -72,7 +86,7 @@ def check_message_middleware(func):
                              reply_markup=generate_markup(
                                  kwargs['previous_buttons']))
             bot.register_next_step_handler(message,
-                                           check_message_middleware(func),
+                                           check_message(func),
                                            *args, **kwargs)
         else:
             func(message, *args, **kwargs)
@@ -112,7 +126,7 @@ def level1_keyboard(message):
 
 
 @check_database
-@check_message_middleware
+@check_message
 def level2_keyboard(message, *args, **kwargs):
     """Second keyboard level, where you chose first letter of author or song."""
     # the dictionary is needed to substitute the field name into the
@@ -136,7 +150,7 @@ def level2_keyboard(message, *args, **kwargs):
 
 
 @check_database
-@check_message_middleware
+@check_message
 def level3_keyboard(message, *args, **kwargs):
     """Last keyboard level, where you choose song to send in group channel."""
     result = db.select_pair(item=message.text, field=kwargs['field'])
@@ -150,7 +164,7 @@ def level3_keyboard(message, *args, **kwargs):
 
 
 @check_database
-@check_message_middleware
+@check_message
 def send_to_channel(message, *args, **kwargs):
     """Send chosen song to group channel."""
     bot.send_message(chat_id=config.GROUP_CHANNEL_ID,
