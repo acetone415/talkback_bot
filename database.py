@@ -6,6 +6,42 @@ from os.path import exists
 
 from config import DATABASE_NAME, TRACKLIST_NAME
 
+from peewee import (
+    SqliteDatabase,
+    Model,
+    CharField
+)
+
+dbase = SqliteDatabase(DATABASE_NAME)
+
+class Tracklist(Model):
+
+    author = CharField()
+    song = CharField()
+
+    class Meta:
+        database = dbase
+        db_table = 'tracklist'
+
+
+def load_tracklist_from_file(filename):
+    """Load new tracklist from file to DB.
+
+    :param filename: (str) Tracklist filename
+    """
+    sep, tracklist = ' - ', []
+    with open(filename, encoding='utf-8-sig') as f:
+        for line in f:
+            line = re.sub(r'\d+\. ', '', line)
+            author_song = line.rstrip().split(sep=sep)
+            # read pair "author - song title"
+            tracklist.append(tuple(author_song))
+    # save first letters of authors and songs
+    Tracklist.drop_table()
+    Tracklist.create_table()
+    Tracklist.insert_many(
+        tracklist, fields=[Tracklist.author, Tracklist.song]).execute()
+
 
 class Database:
     """Database class."""
@@ -113,3 +149,6 @@ class Database:
 
 
 db = Database(DATABASE_NAME)
+db.close()
+
+load_tracklist_from_file(TRACKLIST_NAME)
