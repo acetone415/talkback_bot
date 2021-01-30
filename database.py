@@ -9,7 +9,8 @@ from config import DATABASE_NAME, TRACKLIST_NAME
 from peewee import (
     SqliteDatabase,
     Model,
-    CharField
+    CharField,
+    fn
 )
 
 dbase = SqliteDatabase(DATABASE_NAME)
@@ -20,6 +21,7 @@ class Tracklist(Model):
     song = CharField()
 
     class Meta:
+        
         database = dbase
         db_table = 'tracklist'
 
@@ -41,6 +43,30 @@ def load_tracklist_from_file(filename):
     Tracklist.create_table()
     Tracklist.insert_many(
         tracklist, fields=[Tracklist.author, Tracklist.song]).execute()
+
+
+def get_keyboards() -> tuple:
+    """Return first letters of authors and songnames.
+
+    :return: ((list) author_1st_letters, (list) song_1st_letters)
+    """
+    AUTHOR_KEYBOARD, SONG_KEYBOARD = [], []
+    author_letters = (Tracklist
+                      .select(fn.substr(Tracklist.author, 1, 1)
+                              .alias('letter'))
+                      .distinct()
+                      .order_by(Tracklist.author))
+    song_letters = (Tracklist
+                    .select(fn.substr(Tracklist.song, 1, 1)
+                            .alias('letter'))
+                    .distinct()
+                    .order_by(Tracklist.song))
+    for a_let in author_letters:
+        AUTHOR_KEYBOARD.append(a_let.letter)
+    for s_let in song_letters:
+        SONG_KEYBOARD.append(s_let.letter)
+
+    return AUTHOR_KEYBOARD, SONG_KEYBOARD
 
 
 class Database:
@@ -151,4 +177,4 @@ class Database:
 db = Database(DATABASE_NAME)
 db.close()
 
-load_tracklist_from_file(TRACKLIST_NAME)
+get_keyboards()

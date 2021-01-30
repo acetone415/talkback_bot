@@ -16,7 +16,7 @@ def generate_markup(buttons,
                     row_width=5) -> types.ReplyKeyboardMarkup:
     """Generate ReplyKeyboardMarkup.
 
-    :param buttons: (list) List, containing button labels
+    :param buttons: __iterable object, containing button labels
     :param btn_back: (bool) Adds button "Back" to keyboard if True
     :param btn_home: (bool) Adds button "Home" to keyboard if True
     :param row_width: (int) Row width in markup
@@ -97,7 +97,9 @@ def check_message(func):
 @bot.message_handler(commands=["help"])
 def print_help_info(message):
     """Print help information."""
-    bot.send_message(message.chat.id, text=config.HELP_INFO)
+    HELP_INFO = """Для того, чтобы перейти к выбору песни, введите любой символ
+Для обновления треклиста просто загрузите его"""
+    bot.send_message(message.chat.id, text=HELP_INFO)
 
 
 @bot.message_handler(content_types=['text'])
