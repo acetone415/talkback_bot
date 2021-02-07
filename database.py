@@ -79,9 +79,9 @@ def select_field_by_letter(letter: str, field: str) -> list:
     # getattr(Tracklist, field)) == Tracklist.author or Tracklist.song,
     # depending on the parameter field
     query = (Tracklist
-             .select()
+             .select(getattr(Tracklist, field))
              .distinct()
-             .where(fn.upper(getattr(Tracklist, field)) % f'{letter.upper()}%')
+             .where(getattr(Tracklist, field) ** f'{letter.upper()}%')
              .dicts())
     data = [item[field] for item in query]
     return data

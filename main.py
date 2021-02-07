@@ -138,7 +138,7 @@ def level2_keyboard(message, *args, **kwargs):
     result = db.select_field_by_letter(letter=message.text.upper(),
                                        field=kwargs['field'])
 
-    buttons = [f'{i[0]}' for i in result]
+    buttons = [f'{i}' for i in result]
     markup = generate_markup(buttons, row_width=2)
 
     bot.send_message(
