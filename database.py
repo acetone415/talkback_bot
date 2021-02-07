@@ -15,6 +15,7 @@ from peewee import (
 
 dbase = SqliteDatabase(DATABASE_NAME)
 
+
 class Tracklist(Model):
 
     author = CharField()
@@ -83,6 +84,20 @@ def select_field_by_letter(letter: str, field: str) -> list:
              .where(fn.upper(getattr(Tracklist, field)) % f'{letter.upper()}%')
              .dicts())
     data = [item[field] for item in query]
+    return data
+
+
+def select_pair(field: str, item: str) -> list:
+    """Return pair (author, song) from database, filtered by desired field.
+
+    :param field: (str) field in DB to be selected
+    :param item: (str) author or song in DB
+    :return: (list) List of tuples (author, song)
+    """
+    query = (Tracklist
+             .select()
+             .where(getattr(Tracklist, field) == item))
+    data = [(obj.author, obj.song) for obj in query]
     return data
 
 
