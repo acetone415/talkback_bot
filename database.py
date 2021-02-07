@@ -21,7 +21,6 @@ class Tracklist(Model):
     song = CharField()
 
     class Meta:
-        
         database = dbase
         db_table = 'tracklist'
 
@@ -50,7 +49,6 @@ def get_keyboards() -> tuple:
 
     :return: ((list) author_1st_letters, (list) song_1st_letters)
     """
-    AUTHOR_KEYBOARD, SONG_KEYBOARD = [], []
     author_letters = (Tracklist
                       .select(fn.substr(Tracklist.author, 1, 1)
                               .alias('letter'))
@@ -61,12 +59,31 @@ def get_keyboards() -> tuple:
                             .alias('letter'))
                     .distinct()
                     .order_by(Tracklist.song))
-    for a_let in author_letters:
-        AUTHOR_KEYBOARD.append(a_let.letter)
-    for s_let in song_letters:
-        SONG_KEYBOARD.append(s_let.letter)
+    author_keyboard = [a_let.letter for a_let in author_letters]
+    song_keyboard = [s_let.letter for s_let in song_letters]
+    return author_keyboard, song_keyboard
 
-    return AUTHOR_KEYBOARD, SONG_KEYBOARD
+
+def select_field_by_letter(letter: str, field: str) -> list:
+    """Return list of authors or songs, which names starts with letter.
+
+    :param letter: (str) 1st letter in author or song name
+    :param field: (str) field in database which you want to filter (author
+    or song)
+    :return: (list) List of authors or songs
+    """
+    # Working with rows as dictionaries, because it will make it easier
+    # to retrieve the data through query
+    #
+    # getattr(Tracklist, field)) == Tracklist.author or Tracklist.song,
+    # depending on the parameter field
+    query = (Tracklist
+             .select()
+             .distinct()
+             .where(fn.upper(getattr(Tracklist, field)) % f'{letter.upper()}%')
+             .dicts())
+    data = [item[field] for item in query]
+    return data
 
 
 class Database:
@@ -174,7 +191,4 @@ class Database:
         self.connection.close()
 
 
-db = Database(DATABASE_NAME)
-db.close()
-
-get_keyboards()
+AUTHOR_KEYBOARD, SONG_KEYBOARD = get_keyboards()

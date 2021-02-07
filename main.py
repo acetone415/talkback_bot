@@ -3,7 +3,7 @@
 from os.path import exists
 from sqlite3 import OperationalError
 from telebot import TeleBot, types
-from database import db
+import database as db
 import config
 
 
