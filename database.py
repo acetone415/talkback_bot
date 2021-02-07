@@ -1,19 +1,13 @@
 """This module works with database(DB)."""
 
-import sqlite3
 import re
 from os.path import exists
 
+from peewee import CharField, Model, SqliteDatabase, fn
+
 from config import DATABASE_NAME, TRACKLIST_NAME
 
-from peewee import (
-    SqliteDatabase,
-    Model,
-    CharField,
-    fn
-)
-
-dbase = SqliteDatabase(DATABASE_NAME)
+db = SqliteDatabase(DATABASE_NAME)
 
 
 class Tracklist(Model):
@@ -22,7 +16,7 @@ class Tracklist(Model):
     song = CharField()
 
     class Meta:
-        database = dbase
+        database = db
         db_table = 'tracklist'
 
 

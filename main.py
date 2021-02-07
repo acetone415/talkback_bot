@@ -2,10 +2,11 @@
 
 from os.path import exists
 from sqlite3 import OperationalError
-from telebot import TeleBot, types
-import database as db
-import config
 
+from telebot import TeleBot, types
+
+import config
+import database as db
 
 bot = TeleBot(config.TOKEN)
 
