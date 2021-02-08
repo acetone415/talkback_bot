@@ -3,7 +3,7 @@
 import re
 from os.path import exists
 
-from peewee import CharField, Model, SqliteDatabase, fn
+from peewee import CharField, Model, OperationalError, SqliteDatabase, fn
 
 from config import DATABASE_NAME, TRACKLIST_NAME
 
@@ -95,4 +95,13 @@ def select_pair(field: str, item: str) -> list:
     return data
 
 
-AUTHOR_KEYBOARD, SONG_KEYBOARD = get_keyboards()
+try:
+    AUTHOR_KEYBOARD, SONG_KEYBOARD = get_keyboards()
+
+except OperationalError:
+    if exists(TRACKLIST_NAME):
+        load_tracklist_from_file(TRACKLIST_NAME)
+        AUTHOR_KEYBOARD, SONG_KEYBOARD = get_keyboards()
+
+    else:
+        print('Load Tracklist!')

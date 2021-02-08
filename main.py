@@ -1,8 +1,8 @@
 """Main Bot module."""
 
 from os.path import exists
-from sqlite3 import OperationalError
 
+from peewee import OperationalError
 from telebot import TeleBot, types
 
 import config
