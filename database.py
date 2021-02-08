@@ -20,10 +20,10 @@ class Tracklist(Model):
         db_table = 'tracklist'
 
 
-def load_tracklist_from_file(filename):
+def load_tracklist_from_file(filename: str):
     """Load new tracklist from file to DB.
 
-    :param filename: (str) Tracklist filename
+    :param filename: Tracklist filename
     """
     sep, tracklist = ' - ', []
     with open(filename, encoding='utf-8-sig') as f:
@@ -32,7 +32,6 @@ def load_tracklist_from_file(filename):
             author_song = line.rstrip().split(sep=sep)
             # read pair "author - song title"
             tracklist.append(tuple(author_song))
-    # save first letters of authors and songs
     Tracklist.drop_table()
     Tracklist.create_table()
     Tracklist.insert_many(
@@ -62,10 +61,10 @@ def get_keyboards() -> tuple:
 def select_field_by_letter(letter: str, field: str) -> list:
     """Return list of authors or songs, which names starts with letter.
 
-    :param letter: (str) 1st letter in author or song name
-    :param field: (str) field in database which you want to filter (author
+    :param letter: 1st letter in author or song name
+    :param field: field in database which you want to filter (author
     or song)
-    :return: (list) List of authors or songs
+    :return: List of authors or songs
     """
     # Working with rows as dictionaries, because it will make it easier
     # to retrieve the data through query
@@ -84,9 +83,9 @@ def select_field_by_letter(letter: str, field: str) -> list:
 def select_pair(field: str, item: str) -> list:
     """Return pair (author, song) from database, filtered by desired field.
 
-    :param field: (str) field in DB to be selected
-    :param item: (str) author or song in DB
-    :return: (list) List of tuples (author, song)
+    :param field: field in DB to be selected
+    :param item: author or song in DB
+    :return: List of tuples (author, song)
     """
     query = (Tracklist
              .select()
