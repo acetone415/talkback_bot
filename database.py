@@ -2,6 +2,7 @@
 
 import re
 from os.path import exists
+from typing import List, Tuple
 
 from peewee import CharField, Model, OperationalError, SqliteDatabase, fn
 
@@ -38,10 +39,10 @@ def load_tracklist_from_file(filename: str):
         tracklist, fields=[Tracklist.author, Tracklist.song]).execute()
 
 
-def get_keyboards() -> tuple:
+def get_keyboards() -> Tuple(List(str), List(str)):
     """Return first letters of authors and songnames.
 
-    :return: ((list) author_1st_letters, (list) song_1st_letters)
+    :return: (author_keyboard, song_keyboard)
     """
     author_letters = (Tracklist
                       .select(fn.substr(Tracklist.author, 1, 1)
@@ -58,13 +59,13 @@ def get_keyboards() -> tuple:
     return author_keyboard, song_keyboard
 
 
-def select_field_by_letter(letter: str, field: str) -> list:
+def select_field_by_letter(letter: str, field: str) -> List(str):
     """Return list of authors or songs, which names starts with letter.
 
     :param letter: 1st letter in author or song name
     :param field: field in database which you want to filter (author
     or song)
-    :return: List of authors or songs
+    :return data: List of authors or songs
     """
     # Working with rows as dictionaries, because it will make it easier
     # to retrieve the data through query
@@ -80,7 +81,7 @@ def select_field_by_letter(letter: str, field: str) -> list:
     return data
 
 
-def select_pair(field: str, item: str) -> list:
+def select_pair(field: str, item: str) -> List(tuple):
     """Return pair (author, song) from database, filtered by desired field.
 
     :param field: field in DB to be selected
@@ -95,12 +96,12 @@ def select_pair(field: str, item: str) -> list:
 
 
 try:
-    AUTHOR_KEYBOARD, SONG_KEYBOARD = get_keyboards()
+    author_keyboard, song_keyboard = get_keyboards()
 
 except OperationalError:
     if exists(TRACKLIST_NAME):
         load_tracklist_from_file(TRACKLIST_NAME)
-        AUTHOR_KEYBOARD, SONG_KEYBOARD = get_keyboards()
+        author_keyboard, song_keyboard = get_keyboards()
 
     else:
         print('Load Tracklist!')

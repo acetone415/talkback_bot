@@ -1,6 +1,7 @@
 """Main Bot module."""
 
 from os.path import exists
+from typing import Iterable
 
 from peewee import OperationalError
 from telebot import TeleBot, types
@@ -11,26 +12,23 @@ import database as db
 bot = TeleBot(config.TOKEN)
 
 
-def generate_markup(buttons,
-                    btn_back=False,
+def generate_markup(buttons: Iterable,
                     btn_home=True,
                     row_width=5) -> types.ReplyKeyboardMarkup:
     """Generate ReplyKeyboardMarkup.
-
-    :param buttons: __iterable object, containing button labels
-    :param btn_back: (bool) Adds button "Back" to keyboard if True
-    :param btn_home: (bool) Adds button "Home" to keyboard if True
-    :param row_width: (int) Row width in markup
+    :param buttons: Contains button labels
+    :param btn_back: Adds button "Back" to keyboard if True
+    :param btn_home: Adds button "Home" to keyboard if True
+    :param row_width: Row width in markup
     :return markup: Keyboard markup object
     """
+
     buttons = [types.KeyboardButton(f'{i}') for i in buttons]
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True,
                                        one_time_keyboard=True,
                                        row_width=row_width)
     markup.add(*buttons)
     navigation = []
-    if btn_back:
-        navigation.append(types.KeyboardButton('Назад'))
     if btn_home:
         navigation.append(types.KeyboardButton('В начало'))
     markup.row(*navigation)
@@ -53,7 +51,7 @@ def check_database(func):
         except (OperationalError, AttributeError):
             if exists(config.TRACKLIST_NAME):
                 db.load_tracklist_from_file(config.TRACKLIST_NAME)
-                db.AUTHOR_KEYBOARD, db.SONG_KEYBOARD =\
+                db.author_keyboard, db.song_keyboard =\
                     db.get_keyboards()
                 bot.send_message(
                     message.chat.id,
@@ -115,17 +113,17 @@ def level1_keyboard(message):
     elif message.text == 'Выбрать автора':
         bot.send_message(
             message.chat.id, text='С какой буквы начинается имя автора?',
-            reply_markup=generate_markup(db.AUTHOR_KEYBOARD))
+            reply_markup=generate_markup(db.author_keyboard))
         bot.register_next_step_handler(message,
                                        level2_keyboard,
                                        field='author',
-                                       previous_buttons=db.AUTHOR_KEYBOARD)
+                                       previous_buttons=db.author_keyboard)
     elif message.text == 'Выбрать песню':
         bot.send_message(
             message.chat.id, text='С какой буквы начинается название песни?',
-            reply_markup=generate_markup(db.SONG_KEYBOARD))
+            reply_markup=generate_markup(db.song_keyboard))
         bot.register_next_step_handler(message, level2_keyboard, field='song',
-                                       previous_buttons=db.SONG_KEYBOARD)
+                                       previous_buttons=db.song_keyboard)
 
 
 @check_database
@@ -185,7 +183,7 @@ def download_file(message):
         new_file.write(downloaded_file)
 
     db.load_tracklist_from_file(config.TRACKLIST_NAME)
-    db.AUTHOR_KEYBOARD, db.SONG_KEYBOARD = db.get_keyboards()
+    db.author_keyboard, db.song_keyboard = db.get_keyboards()
 
 
 if __name__ == "__main__":
