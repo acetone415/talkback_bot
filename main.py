@@ -8,6 +8,8 @@ from telebot import TeleBot, types
 
 import config
 import database as db
+from database import Tracklist
+
 
 bot = TeleBot(config.TOKEN)
 
@@ -50,9 +52,9 @@ def check_database(func):
 
         except (OperationalError, AttributeError):
             if exists(config.TRACKLIST_NAME):
-                db.load_tracklist_from_file(config.TRACKLIST_NAME)
+                Tracklist.load_tracklist_from_file(config.TRACKLIST_NAME)
                 db.author_keyboard, db.song_keyboard =\
-                    db.get_keyboards()
+                    Tracklist.get_keyboards()
                 bot.send_message(
                     message.chat.id,
                     "Произошла ошибка. Повторите попытку",
@@ -134,8 +136,8 @@ def level2_keyboard(message, *args, **kwargs):
     # "text" parameter in bot.send_message
     field_to_text = {'song': 'песню', 'author': 'автора'}
 
-    result = db.select_field_by_letter(letter=message.text.upper(),
-                                       field=kwargs['field'])
+    result = Tracklist.select_field_by_letter(letter=message.text.upper(),
+                                              field=kwargs['field'])
 
     buttons = [f'{i}' for i in result]
     markup = generate_markup(buttons, row_width=2)
@@ -154,7 +156,7 @@ def level2_keyboard(message, *args, **kwargs):
 @check_message
 def level3_keyboard(message, *args, **kwargs):
     """Last keyboard level, where you choose song to send in group channel."""
-    result = db.select_pair(item=message.text, field=kwargs['field'])
+    result = Tracklist.select_pair(item=message.text, field=kwargs['field'])
 
     buttons = [f'{" - ".join(i)}' for i in result]
     markup = generate_markup(buttons, row_width=1)
@@ -182,8 +184,8 @@ def download_file(message):
     with open(config.TRACKLIST_NAME, 'wb') as new_file:
         new_file.write(downloaded_file)
 
-    db.load_tracklist_from_file(config.TRACKLIST_NAME)
-    db.author_keyboard, db.song_keyboard = db.get_keyboards()
+    Tracklist.load_tracklist_from_file(config.TRACKLIST_NAME)
+    db.author_keyboard, db.song_keyboard = Tracklist.get_keyboards()
 
 
 if __name__ == "__main__":
