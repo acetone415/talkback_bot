@@ -33,8 +33,7 @@ class Tracklist(Model):
                 author_song = line.rstrip().split(sep=sep)
                 # read pair "author - song title"
                 tracklist.append(tuple(author_song))
-        Tracklist.drop_table()
-        Tracklist.create_table()
+        Tracklist.truncate_table()
         Tracklist.insert_many(
             tracklist, fields=[Tracklist.author, Tracklist.song]).execute()
 
