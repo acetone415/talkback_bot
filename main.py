@@ -104,22 +104,19 @@ def print_help_info(message):
 
 
 @bot.message_handler(commands=['refresh_tracklist'])
-def refresh_tracklist(message):
-    print(message.text, message.document)
-    Tracklist.load_tracklist_from_file(config.TRACKLIST_NAME)
-    db.author_keyboard, db.song_keyboard = Tracklist.get_keyboards()
-
-
 @bot.message_handler(content_types=['document'])
-def download_file(message):
-    """Download the tracklist from user."""
-    file_info = bot.get_file(message.document.file_id)
-    downloaded_file = bot.download_file(file_info.file_path)
-    with open(config.TRACKLIST_NAME, 'wb') as new_file:
-        new_file.write(downloaded_file)
-
+def update_tracklist(message):
+    """Update DB with new tracklist file or with updated old tracklist.
+    You can update tracklist DB with uploading new tracklist file or
+    you can update previous file and send command /refresh_tracklist to bot"""
+    if message.document:
+        file_info = bot.get_file(message.document.file_id)
+        downloaded_file = bot.download_file(file_info.file_path)
+        with open(config.TRACKLIST_NAME, 'wb') as new_file:
+            new_file.write(downloaded_file)
     Tracklist.load_tracklist_from_file(config.TRACKLIST_NAME)
     db.author_keyboard, db.song_keyboard = Tracklist.get_keyboards()
+    bot.send_message(message.chat.id, "Треклист обновлен")
 
 
 @bot.message_handler(content_types=['text'])
