@@ -103,6 +103,25 @@ def print_help_info(message):
     bot.send_message(message.chat.id, text=HELP_INFO)
 
 
+@bot.message_handler(commands=['refresh_tracklist'])
+def refresh_tracklist(message):
+    print(message.text, message.document)
+    Tracklist.load_tracklist_from_file(config.TRACKLIST_NAME)
+    db.author_keyboard, db.song_keyboard = Tracklist.get_keyboards()
+
+
+@bot.message_handler(content_types=['document'])
+def download_file(message):
+    """Download the tracklist from user."""
+    file_info = bot.get_file(message.document.file_id)
+    downloaded_file = bot.download_file(file_info.file_path)
+    with open(config.TRACKLIST_NAME, 'wb') as new_file:
+        new_file.write(downloaded_file)
+
+    Tracklist.load_tracklist_from_file(config.TRACKLIST_NAME)
+    db.author_keyboard, db.song_keyboard = Tracklist.get_keyboards()
+
+
 @bot.message_handler(content_types=['text'])
 @check_database
 def level1_keyboard(message):
@@ -174,18 +193,6 @@ def send_to_channel(message, *args, **kwargs):
     bot.send_message(chat_id=message.chat.id,
                      text="Для продолжения нажмите на кнопку",
                      reply_markup=generate_markup([]))
-
-
-@bot.message_handler(content_types=['document'])
-def download_file(message):
-    """Download the tracklist from user."""
-    file_info = bot.get_file(message.document.file_id)
-    downloaded_file = bot.download_file(file_info.file_path)
-    with open(config.TRACKLIST_NAME, 'wb') as new_file:
-        new_file.write(downloaded_file)
-
-    Tracklist.load_tracklist_from_file(config.TRACKLIST_NAME)
-    db.author_keyboard, db.song_keyboard = Tracklist.get_keyboards()
 
 
 if __name__ == "__main__":
