@@ -37,6 +37,35 @@ def generate_markup(buttons: Iterable,
     return markup
 
 
+@bot.message_handler(commands=["help"])
+def print_help_info(message):
+    """Print help information."""
+    HELP_INFO = """Для того, чтобы перейти к выбору песни, введите любой символ
+Для обновления треклиста просто загрузите его"""
+    bot.send_message(message.chat.id, text=HELP_INFO)
+
+
+@bot.message_handler(commands=['refresh_tracklist'])
+@bot.message_handler(content_types=['document'])
+def update_tracklist(message):
+    """Update DB with new tracklist file or with updated old tracklist.
+    You can update tracklist DB with uploading new tracklist file or
+    you can update previous file and send command /refresh_tracklist to bot"""
+    if message.document:
+        file_info = bot.get_file(message.document.file_id)
+        downloaded_file = bot.download_file(file_info.file_path)
+        with open(config.TRACKLIST_NAME, 'wb') as new_file:
+            new_file.write(downloaded_file)
+    Tracklist.load_tracklist_from_file(config.TRACKLIST_NAME)
+    db.author_keyboard, db.song_keyboard = Tracklist.get_keyboards()
+    bot.send_message(message.chat.id, "Треклист обновлен")
+
+
+commands = {"/help": "print_help_info",
+            "/refresh_tracklist": "update_tracklist",
+            "В начало": "level1_keyboard"}
+
+
 def check_database(func):
     """Check tables existense in DB.
 
@@ -74,11 +103,12 @@ def check_database(func):
 def check_message(func):
     """Check if the entered text matches the keyboard keys."""
     def inner(message, *args, **kwargs):
-        if message.text == 'В начало':
+        if message.text in commands.keys():
             bot.send_message(message.chat.id, "Нажмите кнопку для продолжения",
-                             reply_markup=generate_markup(['Начать работу'],
+                             reply_markup=generate_markup(['Продолжить'],
                                                           btn_home=False))
-            bot.register_next_step_handler(message, level1_keyboard)
+            bot.register_next_step_handler(message,
+                                           eval(commands[message.text]))
 
         elif message.text not in kwargs['previous_buttons']:
             # If sent message not in reply markup
@@ -93,30 +123,6 @@ def check_message(func):
             func(message, *args, **kwargs)
 
     return inner
-
-
-@bot.message_handler(commands=["help"])
-def print_help_info(message):
-    """Print help information."""
-    HELP_INFO = """Для того, чтобы перейти к выбору песни, введите любой символ
-Для обновления треклиста просто загрузите его"""
-    bot.send_message(message.chat.id, text=HELP_INFO)
-
-
-@bot.message_handler(commands=['refresh_tracklist'])
-@bot.message_handler(content_types=['document'])
-def update_tracklist(message):
-    """Update DB with new tracklist file or with updated old tracklist.
-    You can update tracklist DB with uploading new tracklist file or
-    you can update previous file and send command /refresh_tracklist to bot"""
-    if message.document:
-        file_info = bot.get_file(message.document.file_id)
-        downloaded_file = bot.download_file(file_info.file_path)
-        with open(config.TRACKLIST_NAME, 'wb') as new_file:
-            new_file.write(downloaded_file)
-    Tracklist.load_tracklist_from_file(config.TRACKLIST_NAME)
-    db.author_keyboard, db.song_keyboard = Tracklist.get_keyboards()
-    bot.send_message(message.chat.id, "Треклист обновлен")
 
 
 @bot.message_handler(content_types=['text'])
