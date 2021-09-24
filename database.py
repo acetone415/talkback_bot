@@ -94,10 +94,14 @@ class Tracklist(Model):
         return data
 
 
+db.create_tables([Tracklist])
+
+
 try:
     author_keyboard, song_keyboard = Tracklist.get_keyboards()
+    assert author_keyboard and song_keyboard
 
-except OperationalError:
+except (AssertionError, OperationalError):
     if exists(TRACKLIST_NAME):
         Tracklist.load_tracklist_from_file(TRACKLIST_NAME)
         author_keyboard, song_keyboard = Tracklist.get_keyboards()
