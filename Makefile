@@ -18,7 +18,7 @@ run:
 	python3 main.py
 
 isort:
-	python3 isort .
+	isort .
 
 flake:
-	python3 flake8
+	flake8

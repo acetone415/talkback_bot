@@ -10,7 +10,6 @@ import config
 import database as db
 from database import Tracklist
 
-
 bot = TeleBot(config.TOKEN)
 
 
