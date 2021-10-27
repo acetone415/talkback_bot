@@ -15,10 +15,11 @@ install:
 	pip install -r requirements.txt
 
 run:
-	python3 main.py
+	echo "To stop bot press CTRL-C"
+	python3 bot/main.py
 
 isort:
 	isort .
 
 flake:
-	flake8
+	flake8 .
