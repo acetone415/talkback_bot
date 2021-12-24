@@ -12,7 +12,7 @@ help:
 	echo "  isort		Run isort"
 
 install:
-	pip install -r requirements.txt
+	pip3 install -r requirements.txt
 
 run:
 	echo "To stop bot press CTRL-C"
