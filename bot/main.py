@@ -1,39 +1,68 @@
 """Main Bot module."""
 
 from os.path import exists
-from sqlite3 import OperationalError
-from telebot import TeleBot, types
-from database import db
-import config
+from typing import Iterable
 
+from peewee import OperationalError
+from telebot import TeleBot, types
+
+import config
+import database as db
+from database import Tracklist
 
 bot = TeleBot(config.TOKEN)
 
 
-def generate_markup(buttons,
-                    btn_back=False,
+def generate_markup(buttons: Iterable,
                     btn_home=True,
                     row_width=5) -> types.ReplyKeyboardMarkup:
     """Generate ReplyKeyboardMarkup.
-
-    :param buttons: (list) List, containing button labels
-    :param btn_back: (bool) Adds button "Back" to keyboard if True
-    :param btn_home: (bool) Adds button "Home" to keyboard if True
-    :param row_width: (int) Row width in markup
+    :param buttons: Contains button labels
+    :param btn_back: Adds button "Back" to keyboard if True
+    :param btn_home: Adds button "Home" to keyboard if True
+    :param row_width: Row width in markup
     :return markup: Keyboard markup object
     """
+
     buttons = [types.KeyboardButton(f'{i}') for i in buttons]
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True,
                                        one_time_keyboard=True,
                                        row_width=row_width)
     markup.add(*buttons)
     navigation = []
-    if btn_back:
-        navigation.append(types.KeyboardButton('Назад'))
     if btn_home:
         navigation.append(types.KeyboardButton('В начало'))
     markup.row(*navigation)
     return markup
+
+
+@bot.message_handler(commands=["help"])
+def print_help_info(message):
+    """Print help information."""
+    HELP_INFO = """Для того, чтобы перейти к выбору песни, введите любой символ
+Для обновления треклиста просто загрузите его"""
+    bot.send_message(message.chat.id, text=HELP_INFO)
+
+
+@bot.message_handler(commands=['refresh_tracklist'])
+@bot.message_handler(content_types=['document'])
+def update_tracklist(message):
+    """Update DB with new tracklist file or with updated old tracklist.
+    You can update tracklist DB with uploading new tracklist file or
+    you can update previous file and send command /refresh_tracklist to bot"""
+    if message.document:
+        file_info = bot.get_file(message.document.file_id)
+        downloaded_file = bot.download_file(file_info.file_path)
+        with open(config.TRACKLIST_NAME, 'wb') as new_file:
+            new_file.write(downloaded_file)
+    Tracklist.load_tracklist_from_file(config.TRACKLIST_NAME)
+    db.author_keyboard, db.song_keyboard = Tracklist.get_keyboards()
+    bot.send_message(message.chat.id, "Треклист обновлен")
+
+
+commands = {"/help": "print_help_info",
+            "/refresh_tracklist": "update_tracklist",
+            "В начало": "level1_keyboard"}
 
 
 def check_database(func):
@@ -51,9 +80,9 @@ def check_database(func):
 
         except (OperationalError, AttributeError):
             if exists(config.TRACKLIST_NAME):
-                db.load_tracklist_from_file(config.TRACKLIST_NAME)
-                db.AUTHOR_KEYBOARD, db.SONG_KEYBOARD =\
-                    db.get_keyboards()
+                Tracklist.load_tracklist_from_file(config.TRACKLIST_NAME)
+                db.author_keyboard, db.song_keyboard =\
+                    Tracklist.get_keyboards()
                 bot.send_message(
                     message.chat.id,
                     "Произошла ошибка. Повторите попытку",
@@ -73,11 +102,12 @@ def check_database(func):
 def check_message(func):
     """Check if the entered text matches the keyboard keys."""
     def inner(message, *args, **kwargs):
-        if message.text == 'В начало':
+        if message.text in commands.keys():
             bot.send_message(message.chat.id, "Нажмите кнопку для продолжения",
-                             reply_markup=generate_markup(['Начать работу'],
+                             reply_markup=generate_markup(['Продолжить'],
                                                           btn_home=False))
-            bot.register_next_step_handler(message, level1_keyboard)
+            bot.register_next_step_handler(message,
+                                           eval(commands[message.text]))
 
         elif message.text not in kwargs['previous_buttons']:
             # If sent message not in reply markup
@@ -94,12 +124,6 @@ def check_message(func):
     return inner
 
 
-@bot.message_handler(commands=["help"])
-def print_help_info(message):
-    """Print help information."""
-    bot.send_message(message.chat.id, text=config.HELP_INFO)
-
-
 @bot.message_handler(content_types=['text'])
 @check_database
 def level1_keyboard(message):
@@ -112,17 +136,17 @@ def level1_keyboard(message):
     elif message.text == 'Выбрать автора':
         bot.send_message(
             message.chat.id, text='С какой буквы начинается имя автора?',
-            reply_markup=generate_markup(db.AUTHOR_KEYBOARD))
+            reply_markup=generate_markup(db.author_keyboard))
         bot.register_next_step_handler(message,
                                        level2_keyboard,
                                        field='author',
-                                       previous_buttons=db.AUTHOR_KEYBOARD)
+                                       previous_buttons=db.author_keyboard)
     elif message.text == 'Выбрать песню':
         bot.send_message(
             message.chat.id, text='С какой буквы начинается название песни?',
-            reply_markup=generate_markup(db.SONG_KEYBOARD))
+            reply_markup=generate_markup(db.song_keyboard))
         bot.register_next_step_handler(message, level2_keyboard, field='song',
-                                       previous_buttons=db.SONG_KEYBOARD)
+                                       previous_buttons=db.song_keyboard)
 
 
 @check_database
@@ -133,10 +157,10 @@ def level2_keyboard(message, *args, **kwargs):
     # "text" parameter in bot.send_message
     field_to_text = {'song': 'песню', 'author': 'автора'}
 
-    result = db.select_field_by_letter(letter=message.text.upper(),
-                                       field=kwargs['field'])
+    result = Tracklist.select_field_by_letter(letter=message.text.upper(),
+                                              field=kwargs['field'])
 
-    buttons = [f'{i[0]}' for i in result]
+    buttons = [f'{i}' for i in result]
     markup = generate_markup(buttons, row_width=2)
 
     bot.send_message(
@@ -153,7 +177,7 @@ def level2_keyboard(message, *args, **kwargs):
 @check_message
 def level3_keyboard(message, *args, **kwargs):
     """Last keyboard level, where you choose song to send in group channel."""
-    result = db.select_pair(item=message.text, field=kwargs['field'])
+    result = Tracklist.select_pair(item=message.text, field=kwargs['field'])
 
     buttons = [f'{" - ".join(i)}' for i in result]
     markup = generate_markup(buttons, row_width=1)
@@ -171,18 +195,6 @@ def send_to_channel(message, *args, **kwargs):
     bot.send_message(chat_id=message.chat.id,
                      text="Для продолжения нажмите на кнопку",
                      reply_markup=generate_markup([]))
-
-
-@bot.message_handler(content_types=['document'])
-def download_file(message):
-    """Download the tracklist from user."""
-    file_info = bot.get_file(message.document.file_id)
-    downloaded_file = bot.download_file(file_info.file_path)
-    with open(config.TRACKLIST_NAME, 'wb') as new_file:
-        new_file.write(downloaded_file)
-
-    db.load_tracklist_from_file(config.TRACKLIST_NAME)
-    db.AUTHOR_KEYBOARD, db.SONG_KEYBOARD = db.get_keyboards()
 
 
 if __name__ == "__main__":
